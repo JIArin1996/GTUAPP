@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <title>Generar Excel</title>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2>Ingrese el nombre del archivo y cargue el PDF</h2>
+            <form method="post" enctype="multipart/form-data">
+                <label>Nombre del archivo (sin extensión):</label>
+                <input type="text" name="nombre_archivo" required><br><br>
+                <label>Cargar PDF:</label><br>
+                <input type="file" name="archivo_pdf" accept="application/pdf" required><br><br>
+                <input type="submit" value="Generar Excel">
+            </form>
+        </div>
+    </div>
+</body>
+</html>
