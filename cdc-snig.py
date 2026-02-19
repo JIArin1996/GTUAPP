@@ -1,36 +1,41 @@
+﻿import os
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
-# Configuración del WebDriver (asegúrate de que el path al driver sea correcto)
-driver = webdriver.Chrome()
 
-def login():
-    driver.get(https://www.snig.gub.uy/)  # Reemplaza con la URL real
+SNIG_URL = os.getenv("SNIG_URL", "https://www.snig.gub.uy/")
+SNIG_USER = os.getenv("SNIG_USER")
+SNIG_PASSWORD = os.getenv("SNIG_PASSWORD")
 
+
+def login() -> None:
+    if not SNIG_USER or not SNIG_PASSWORD:
+        raise ValueError("Definí SNIG_USER y SNIG_PASSWORD como variables de entorno.")
+
+    driver = webdriver.Chrome()
     try:
-        # Esperar hasta que el campo "usuario" esté interactuable
+        driver.get(SNIG_URL)
+
         usuario_input = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "usuario"))
         )
-        usuario_input.send_keys(208146)  # Reemplaza con el usuario real
+        usuario_input.send_keys(SNIG_USER)
 
-        # También podrías hacer lo mismo con la contraseña y el botón de login
         password_input = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "password"))
         )
-        password_input.send_keys(SantaRemigia2026)  # Reemplaza con la contraseña real
+        password_input.send_keys(SNIG_PASSWORD)
 
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "boton_login"))  # Ajusta el ID según el botón real
+            EC.element_to_be_clickable((By.ID, "boton_login"))
         )
         login_button.click()
-
-    except Exception as e:
-        print(f"Error en el login: {e}")
     finally:
-        driver.quit()  # Cierra el navegador al finalizar
+        driver.quit()
 
-# Ejecutar la función de login
-login()
+
+if __name__ == "__main__":
+    login()
