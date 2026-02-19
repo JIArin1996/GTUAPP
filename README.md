@@ -1,6 +1,6 @@
-﻿# Generador GTU
+﻿# Generador GTU (Web)
 
-Aplicación en Python para extraer datos desde un PDF y generar un Excel con columnas `Caravana`, `Sexo` y `Edad`.
+Aplicación web en Python (Flask) para extraer datos desde un PDF y generar un Excel con columnas `Caravana`, `Sexo` y `Edad`.
 
 ## Requisitos
 
@@ -13,24 +13,16 @@ Aplicación en Python para extraer datos desde un PDF y generar un Excel con col
 pip install -r requirements.txt
 ```
 
-## Ejecución
-
-Web local (Flask):
+## Ejecución local
 
 ```bash
 python pdf_excel_gtu.py
 ```
 
-App de escritorio (pywebview):
+Luego abrí en el navegador:
 
-```bash
-python app_launcher.py
-```
-
-## Build ejecutable (PyInstaller)
-
-```bash
-pyinstaller appGTU.spec
+```text
+http://127.0.0.1:5000
 ```
 
 ## Notas

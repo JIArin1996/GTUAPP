@@ -3,29 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <title>Generar Excel</title>
+    <title>Generador GTU | PDF a Excel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v3') }}">
+    <script src="{{ url_for('static', filename='app.js', v='v3') }}" defer></script>
 </head>
 <body>
-    <div class="container">
-        <div class="form-container">
-            <h2>Ingrese el nombre del archivo y cargue el PDF</h2>
-            {% if error %}
-            <p class="error">{{ error }}</p>
-            {% endif %}
-            <form method="post" enctype="multipart/form-data">
-                <label for="nombre_archivo">Nombre del archivo (sin extensión):</label>
-                <input type="text" id="nombre_archivo" name="nombre_archivo" required>
+    <main class="shell">
+        <section class="hero card">
+            <div class="hero-top">
+                <div>
+                    <p class="kicker">GTU PLATFORM</p>
+                    <h1>Conversión inteligente de PDF a Excel</h1>
+                    <p class="sub">Generá tu planilla en segundos, con una interfaz clara y un flujo sin recargas.</p>
+                </div>
+                <div class="logo-wrap">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo GTU" class="logo">
+                </div>
+            </div>
 
-                <label for="archivo_pdf">Cargar PDF:</label>
-                <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" required>
+            <form id="generador-form" method="post" enctype="multipart/form-data" action="/" novalidate>
+                <div class="fields-grid">
+                    <div class="field">
+                        <label for="nombre_archivo">Nombre del archivo</label>
+                        <input type="text" id="nombre_archivo" name="nombre_archivo" placeholder="ej: Venta_Cliente" required>
+                    </div>
+                    <div class="field">
+                        <label for="archivo_pdf">Archivo PDF</label>
+                        <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" required>
+                    </div>
+                </div>
 
-                <input type="submit" value="Generar Excel">
+                <p id="error-message" class="inline-error{% if error %} is-visible{% endif %}" role="alert" aria-live="polite">{% if error %}{{ error }}{% endif %}</p>
+
+                <button type="button" id="submit-btn" class="primary-btn">
+                    <span class="btn-label">Generar y descargar Excel</span>
+                    <span class="spinner" aria-hidden="true"></span>
+                </button>
             </form>
-        </div>
-        <div class="img-container">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo de la empresa">
-        </div>
-    </div>
+        </section>
+
+        <section class="history card">
+            <div class="history-head">
+                <h2>Últimas descargas</h2>
+                <span class="chip">máx 5</span>
+            </div>
+            <p class="history-sub">Registro local por navegador, ordenado por más reciente.</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Fecha y hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <tr><td colspan="2" class="empty-row">Aún no hay descargas registradas.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
