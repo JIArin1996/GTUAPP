@@ -47,38 +47,5 @@ def index():
         return send_file(archivo_generado, as_attachment=True, download_name=f"{nombre_archivo}.xlsx")
 
     return render_template('index.html')
-
-#     return render_template_string('''
-# <!doctype html>
-# <html>
-# <head>
-#     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-#     <title>Generar Excel</title>
-# </head>
-# <body>
-#     <div class="container">
-#         <!-- Formulario a la izquierda -->
-#         <div class="form-container">
-#             <h2>Ingrese el nombre del archivo y cargue el PDF</h2>
-#             <form method="post" enctype="multipart/form-data">
-#                 <label>Nombre del archivo (sin extensión):</label>
-#                 <input type="text" name="nombre_archivo" required><br><br>
-#                 <label>Cargar PDF:</label><br>
-#                 <input type="file" name="archivo_pdf" accept="application/pdf" required><br><br>
-#                 <input type="submit" value="Generar Excel">
-#             </form>
-#         </div>
-
-#         <!-- Imagen/logo a la derecha (si es necesario) -->
-#         <div class="img-container">
-#             <!-- Reemplaza 'logo.png' por tu imagen real en la carpeta 'static' -->
-#             <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo de la empresa">
-#         </div>
-#     </div>
-# </body>
-# </html>
-
-#     ''')
-
 if __name__ == "__main__":
     app.run(debug=True)

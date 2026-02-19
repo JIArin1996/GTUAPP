@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <title>Archivo generado</title>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2>¡Archivo generado correctamente!</h2>
+            <p>El archivo fue guardado en tu carpeta de Descargas.</p>
+            <p><strong>{{ ruta_excel }}</strong></p>
+            <a href="/" class="boton">Volver</a>
+        </div>
+        <div class="img-container">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo de la empresa">
+        </div>
+    </div>
+</body>
+</html>
