@@ -37,24 +37,33 @@ def respuesta_error(mensaje: str, status_code: int = 400):
 def index():
     if request.method == "POST":
         nombre_archivo = sanitizar_nombre_archivo(request.form.get("nombre_archivo", ""))
-        archivo_pdf = request.files.get("archivo_pdf")
+        archivos_pdf = request.files.getlist("archivo_pdf")
 
         if not nombre_archivo:
             return respuesta_error("Ingresá un nombre de archivo válido.")
 
-        if not archivo_pdf or not archivo_pdf.filename.lower().endswith(".pdf"):
-            return respuesta_error("Debes cargar un archivo PDF válido.")
+        archivos_validos = [archivo for archivo in archivos_pdf if archivo and archivo.filename]
+        if not archivos_validos:
+            return respuesta_error("Debes cargar al menos un archivo PDF.")
+
+        if any(not archivo.filename.lower().endswith(".pdf") for archivo in archivos_validos):
+            return respuesta_error("Todos los archivos cargados deben ser PDF.")
 
         try:
             temp_dir = Path(tempfile.gettempdir())
-            ruta_pdf = temp_dir / "pdf_temporal_gtu.pdf"
-            archivo_pdf.save(ruta_pdf)
+            rutas_pdf = []
+            datos_procesados = []
 
-            texto_entrada = leer_pdf(ruta_pdf)
-            datos_procesados = procesar_entrada(texto_entrada)
+            for idx, archivo_pdf in enumerate(archivos_validos):
+                ruta_pdf = temp_dir / f"pdf_temporal_gtu_{idx}.pdf"
+                archivo_pdf.save(ruta_pdf)
+                rutas_pdf.append(ruta_pdf)
+
+                texto_entrada = leer_pdf(ruta_pdf)
+                datos_procesados.extend(procesar_entrada(texto_entrada))
 
             if not datos_procesados:
-                return respuesta_error("No se encontraron datos con el formato esperado en el PDF.")
+                return respuesta_error("No se encontraron datos con el formato esperado en los PDF.")
 
             tmp_excel = tempfile.NamedTemporaryFile(prefix="gtu_", suffix=".xlsx", delete=False)
             ruta_excel = Path(tmp_excel.name)
@@ -64,11 +73,12 @@ def index():
 
             @after_this_request
             def cleanup_temporales(response):
-                try:
-                    if ruta_pdf.exists():
-                        ruta_pdf.unlink()
-                except OSError:
-                    pass
+                for ruta_pdf in rutas_pdf:
+                    try:
+                        if ruta_pdf.exists():
+                            ruta_pdf.unlink()
+                    except OSError:
+                        pass
 
                 try:
                     if ruta_excel.exists():
