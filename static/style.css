@@ -105,6 +105,21 @@ h1 {
     gap: 16px;
 }
 
+.section-title {
+    margin-bottom: 2px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--blue-700);
+}
+
+.divider {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 22px 0;
+}
+
 .field {
     display: flex;
     flex-direction: column;

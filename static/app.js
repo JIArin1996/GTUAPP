@@ -1,11 +1,18 @@
 ﻿const STORAGE_KEY = "gtu_last_downloads_v1";
 const MAX_ITEMS = 5;
 
-const form = document.getElementById("generador-form");
-const submitBtn = document.getElementById("submit-btn");
-const spinner = document.querySelector(".spinner");
-const btnLabel = document.querySelector(".btn-label");
-const errorMessage = document.getElementById("error-message");
+const formPdf = document.getElementById("generador-form");
+const submitPdfBtn = document.getElementById("submit-btn");
+const spinnerPdf = submitPdfBtn.querySelector(".spinner");
+const labelPdf = submitPdfBtn.querySelector(".btn-label");
+const errorPdf = document.getElementById("error-message");
+
+const formSnig = document.getElementById("snig-form");
+const submitSnigBtn = document.getElementById("snig-submit-btn");
+const spinnerSnig = document.getElementById("snig-spinner");
+const labelSnig = document.getElementById("snig-btn-label");
+const errorSnig = document.getElementById("snig-error-message");
+
 const historyBody = document.getElementById("history-body");
 const toast = document.getElementById("toast");
 
@@ -55,21 +62,21 @@ function showToast(message, isError) {
     }, 2600);
 }
 
-function setLoading(loading) {
-    submitBtn.disabled = loading;
-    submitBtn.setAttribute("aria-busy", String(loading));
+function setLoading(button, spinner, label, loading, idleText, loadingText) {
+    button.disabled = loading;
+    button.setAttribute("aria-busy", String(loading));
     spinner.style.display = loading ? "inline-block" : "none";
-    btnLabel.textContent = loading ? "Generando..." : "Generar y descargar Excel";
+    label.textContent = loading ? loadingText : idleText;
 }
 
-function clearError() {
-    errorMessage.textContent = "";
-    errorMessage.classList.remove("is-visible");
+function clearError(errorNode) {
+    errorNode.textContent = "";
+    errorNode.classList.remove("is-visible");
 }
 
-function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.classList.add("is-visible");
+function showError(errorNode, message) {
+    errorNode.textContent = message;
+    errorNode.classList.add("is-visible");
 }
 
 function extractFilename(contentDisposition, fallback) {
@@ -90,18 +97,47 @@ function extractFilename(contentDisposition, fallback) {
     return fallback;
 }
 
-async function generateAndDownload() {
-    if (submitBtn.disabled) {
+async function parseErrorResponse(response, fallbackMessage) {
+    let message = fallbackMessage;
+
+    try {
+        const data = await response.json();
+        if (data && data.error) {
+            message = data.error;
+        }
+    } catch (jsonErr) {
+        const text = await response.text();
+        if (text) {
+            message = text;
+        }
+    }
+
+    return message;
+}
+
+function triggerBlobDownload(blob, filename) {
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+}
+
+async function generatePdfToExcel() {
+    if (submitPdfBtn.disabled) {
         return;
     }
 
-    clearError();
+    clearError(errorPdf);
 
-    const formData = new FormData(form);
+    const formData = new FormData(formPdf);
     const nombre = (formData.get("nombre_archivo") || "archivo_gtu").toString().trim() || "archivo_gtu";
     const fallbackName = `${nombre.replace(/\.xlsx$/i, "")}.xlsx`;
 
-    setLoading(true);
+    setLoading(submitPdfBtn, spinnerPdf, labelPdf, true, "Generar y descargar Excel", "Generando...");
 
     try {
         const response = await fetch("/", {
@@ -113,62 +149,75 @@ async function generateAndDownload() {
         });
 
         if (!response.ok) {
-            let message = "No se pudo generar el archivo.";
-            try {
-                const data = await response.json();
-                if (data && data.error) {
-                    message = data.error;
-                }
-            } catch (jsonErr) {
-                const text = await response.text();
-                if (text) {
-                    message = text;
-                }
-            }
-            throw new Error(message);
+            throw new Error(await parseErrorResponse(response, "No se pudo generar el archivo Excel."));
         }
 
         const blob = await response.blob();
-        const contentDisposition = response.headers.get("Content-Disposition");
-        const filename = extractFilename(contentDisposition, fallbackName);
+        const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
 
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(objectUrl);
-
+        triggerBlobDownload(blob, filename);
         pushHistory(filename);
-        showToast("Archivo generado correctamente", false);
-        form.reset();
+        showToast("Excel generado correctamente", false);
+        formPdf.reset();
     } catch (error) {
-        showError(error.message || "Ocurrió un error inesperado.");
-        showToast("Error al generar el archivo", true);
+        showError(errorPdf, error.message || "Ocurrió un error inesperado.");
+        showToast("Error al generar Excel", true);
     } finally {
-        setLoading(false);
+        setLoading(submitPdfBtn, spinnerPdf, labelPdf, false, "Generar y descargar Excel", "Generando...");
     }
 }
 
-function onSubmit(event) {
-    event.preventDefault();
-    if (!submitBtn.disabled) {
-        generateAndDownload();
+async function generateExcelToTxt() {
+    if (submitSnigBtn.disabled) {
+        return;
     }
-}
 
-submitBtn.addEventListener("click", generateAndDownload);
-form.addEventListener("submit", onSubmit);
+    clearError(errorSnig);
 
-form.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && event.target.tagName !== "TEXTAREA") {
-        event.preventDefault();
-        if (!submitBtn.disabled) {
-            generateAndDownload();
+    const formData = new FormData(formSnig);
+    const nombre = (formData.get("nombre_txt") || "salida_snig").toString().trim() || "salida_snig";
+    const fallbackName = `${nombre.replace(/\.txt$/i, "")}.txt`;
+
+    setLoading(submitSnigBtn, spinnerSnig, labelSnig, true, "Generar y descargar TXT", "Generando...");
+
+    try {
+        const response = await fetch("/excel-a-txt", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(await parseErrorResponse(response, "No se pudo generar el TXT SNIG."));
         }
+
+        const blob = await response.blob();
+        const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
+
+        triggerBlobDownload(blob, filename);
+        pushHistory(filename);
+        showToast("TXT SNIG generado correctamente", false);
+        formSnig.reset();
+    } catch (error) {
+        showError(errorSnig, error.message || "Ocurrió un error inesperado.");
+        showToast("Error al generar TXT SNIG", true);
+    } finally {
+        setLoading(submitSnigBtn, spinnerSnig, labelSnig, false, "Generar y descargar TXT", "Generando...");
     }
+}
+
+submitPdfBtn.addEventListener("click", generatePdfToExcel);
+formPdf.addEventListener("submit", (event) => {
+    event.preventDefault();
+    generatePdfToExcel();
+});
+
+submitSnigBtn.addEventListener("click", generateExcelToTxt);
+formSnig.addEventListener("submit", (event) => {
+    event.preventDefault();
+    generateExcelToTxt();
 });
 
 renderHistory();

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador GTU | PDF a Excel</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v3') }}">
-    <script src="{{ url_for('static', filename='app.js', v='v3') }}" defer></script>
+    <title>Generador GTU | Conversores</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v5') }}">
+    <script src="{{ url_for('static', filename='app.js', v='v5') }}" defer></script>
 </head>
 <body>
     <main class="shell">
@@ -13,8 +13,8 @@
             <div class="hero-top">
                 <div>
                     <p class="kicker">GTU PLATFORM</p>
-                    <h1>Conversión de PDF a Excel</h1>
-                    <p class="sub">Generá archivos Excel a partir de la Constancia Electronica.</p>
+                    <h1>Conversores de Archivos GTU</h1>
+                    <p class="sub">Convertí PDF a Excel y Excel a TXT SNIG desde la misma pantalla.</p>
                 </div>
                 <div class="logo-wrap">
                     <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo GTU" class="logo">
@@ -24,12 +24,13 @@
             <form id="generador-form" method="post" enctype="multipart/form-data" action="/" novalidate>
                 <div class="fields-grid">
                     <div class="field">
+                        <label class="section-title" for="nombre_archivo">PDF a Excel</label>
                         <label for="nombre_archivo">Nombre del archivo</label>
                         <input type="text" id="nombre_archivo" name="nombre_archivo" placeholder="ej: Venta_Cliente" required>
                     </div>
                     <div class="field">
-                        <label for="archivo_pdf">Archivo PDF</label>
-                        <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" required>
+                        <label for="archivo_pdf">Archivos PDF</label>
+                        <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" multiple required>
                     </div>
                 </div>
 
@@ -38,6 +39,33 @@
                 <button type="button" id="submit-btn" class="primary-btn">
                     <span class="btn-label">Generar y descargar Excel</span>
                     <span class="spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <hr class="divider">
+
+            <form id="snig-form" method="post" enctype="multipart/form-data" action="/excel-a-txt" novalidate>
+                <div class="fields-grid">
+                    <div class="field">
+                        <label class="section-title" for="archivo_excel">Excel a TXT SNIG</label>
+                        <label for="archivo_excel">Archivo Excel (.xlsx)</label>
+                        <input type="file" id="archivo_excel" name="archivo_excel" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                    </div>
+                    <div class="field">
+                        <label for="guia">Número de guía</label>
+                        <input type="text" id="guia" name="guia" placeholder="ej: D674195" required>
+                    </div>
+                    <div class="field">
+                        <label for="nombre_txt">Nombre del TXT</label>
+                        <input type="text" id="nombre_txt" name="nombre_txt" placeholder="ej: salida_snig">
+                    </div>
+                </div>
+
+                <p id="snig-error-message" class="inline-error" role="alert" aria-live="polite"></p>
+
+                <button type="button" id="snig-submit-btn" class="primary-btn">
+                    <span class="btn-label" id="snig-btn-label">Generar y descargar TXT</span>
+                    <span class="spinner" id="snig-spinner" aria-hidden="true"></span>
                 </button>
             </form>
         </section>
