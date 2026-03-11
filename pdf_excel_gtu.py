@@ -160,6 +160,9 @@ def excel_a_txt():
     if not guia:
         return respuesta_error("Debes ingresar el número de guía.")
 
+    if not re.fullmatch(r"[A-Za-z]\d{6}", guia):
+        return respuesta_error("El número de guía debe tener 1 letra seguida de 6 números (ej: D674195).")
+
     if not nombre_archivo:
         nombre_archivo = "salida_snig"
 
