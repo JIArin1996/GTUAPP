@@ -1,31 +1,120 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <title>Generar Excel</title>
+    <title>Generador GTU | Conversores</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v6') }}">
+    <script src="{{ url_for('static', filename='app.js', v='v5') }}" defer></script>
 </head>
 <body>
-    <div class="container">
-        <div class="form-container">
-            <h2>Ingrese el nombre del archivo y cargue el PDF</h2>
-            {% if error %}
-            <p class="error">{{ error }}</p>
-            {% endif %}
-            <form method="post" enctype="multipart/form-data">
-                <label for="nombre_archivo">Nombre del archivo (sin extensión):</label>
-                <input type="text" id="nombre_archivo" name="nombre_archivo" required>
-
-                <label for="archivo_pdf">Cargar PDF:</label>
-                <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" required>
-
-                <input type="submit" value="Generar Excel">
-            </form>
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <div class="app-brand">
+                <div class="brand-logo-wrap">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo GTU" class="brand-logo">
+                </div>
+                <div class="brand-text">
+                    <span class="brand-kicker">GTU PLATFORM</span>
+                    <span class="brand-name">Conversores de Archivos</span>
+                </div>
+            </div>
+            <p class="brand-tag">PDF → Excel &nbsp;·&nbsp; Excel → TXT SNIG</p>
         </div>
-        <div class="img-container">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo de la empresa">
-        </div>
-    </div>
+    </header>
+
+    <main class="shell">
+        <section class="hero card">
+            <div class="form-panel pdf-panel">
+                <div class="panel-header">
+                    <div class="panel-badge">PDF → XLS</div>
+                    <div>
+                        <p class="panel-title">PDF a Excel</p>
+                        <p class="panel-desc">Convertí uno o varios archivos PDF a una planilla Excel.</p>
+                    </div>
+                </div>
+
+                <form id="generador-form" method="post" enctype="multipart/form-data" action="/" novalidate>
+                    <div class="fields-grid">
+                        <div class="field">
+                            <label for="nombre_archivo">Nombre del archivo</label>
+                            <input type="text" id="nombre_archivo" name="nombre_archivo" placeholder="ej: Venta_Cliente" required>
+                        </div>
+                        <div class="field">
+                            <label for="archivo_pdf">Archivos PDF</label>
+                            <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" multiple required>
+                        </div>
+                    </div>
+
+                    <p id="error-message" class="inline-error{% if error %} is-visible{% endif %}" role="alert" aria-live="polite">{% if error %}{{ error }}{% endif %}</p>
+
+                    <button type="button" id="submit-btn" class="primary-btn btn-blue">
+                        <span class="btn-label">Generar y descargar Excel</span>
+                        <span class="spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="panel-sep"></div>
+
+            <div class="form-panel snig-panel">
+                <div class="panel-header">
+                    <div class="panel-badge snig-badge">XLS → TXT</div>
+                    <div>
+                        <p class="panel-title">Excel a TXT SNIG</p>
+                        <p class="panel-desc">Generá el archivo TXT SNIG a partir de un Excel.</p>
+                    </div>
+                </div>
+
+                <form id="snig-form" method="post" enctype="multipart/form-data" action="/excel-a-txt" novalidate>
+                    <div class="fields-grid snig-grid">
+                        <div class="field">
+                            <label for="archivo_excel">Archivo Excel (.xlsx)</label>
+                            <input type="file" id="archivo_excel" name="archivo_excel" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                        </div>
+                        <div class="field">
+                            <label for="guia">Número de guía</label>
+                            <input type="text" id="guia" name="guia" placeholder="ej: D674195" pattern="[A-Za-z]\d{6}" title="1 letra seguida de 6 números (ej: D674195)" required>
+                        </div>
+                        <div class="field">
+                            <label for="nombre_txt">Nombre del TXT</label>
+                            <input type="text" id="nombre_txt" name="nombre_txt" placeholder="ej: salida_snig">
+                        </div>
+                    </div>
+
+                    <p id="snig-error-message" class="inline-error" role="alert" aria-live="polite"></p>
+
+                    <button type="button" id="snig-submit-btn" class="primary-btn btn-teal">
+                        <span class="btn-label" id="snig-btn-label">Generar y descargar TXT</span>
+                        <span class="spinner" id="snig-spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="history card">
+            <div class="history-head">
+                <h2>Últimas descargas</h2>
+                <span class="chip">máx 5</span>
+            </div>
+            <p class="history-sub">Registro local por navegador, ordenado por más reciente.</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Fecha y hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <tr><td colspan="2" class="empty-row">Aún no hay descargas registradas.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
