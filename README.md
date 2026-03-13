@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ## Ejecución local
 
 ```bash
-python pdf_excel_gtu.py
+python appgtu.py
 ```
 
 Luego abrí en el navegador:

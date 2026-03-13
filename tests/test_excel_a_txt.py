@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pdf_excel_gtu import construir_txt_snig, extraer_caravanas_snig_excel
+from appgtu import construir_txt_snig, extraer_caravanas_snig_excel
 
 
 class ExcelATxtTests(unittest.TestCase):
