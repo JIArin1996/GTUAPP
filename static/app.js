@@ -221,3 +221,46 @@ formSnig.addEventListener("submit", (event) => {
 });
 
 renderHistory();
+
+/* ─── Sidebar & Navigation ───────────────────────────── */
+
+const sidebar = document.getElementById("sidebar");
+const sidebarToggle = document.getElementById("sidebar-toggle");
+const appBarTitle = document.getElementById("app-bar-title");
+
+const sectionTitles = {
+    home: "Bienvenido",
+    conversor: "Conversores de Archivos",
+    anexos: "Creador de Anexos",
+    "cdc-snig": "CDC SNIG",
+    "stock-snig": "Descarga de Stock SNIG",
+};
+
+function navigateTo(sectionId) {
+    document.querySelectorAll(".section").forEach((s) => s.classList.remove("is-active"));
+    document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
+
+    const section = document.getElementById("sec-" + sectionId);
+    if (section) section.classList.add("is-active");
+
+    const navItem = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+    if (navItem) navItem.classList.add("active");
+
+    if (appBarTitle) appBarTitle.textContent = sectionTitles[sectionId] || "";
+}
+
+sidebarToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed");
+});
+
+document.querySelectorAll(".nav-item[data-section]").forEach((item) => {
+    item.addEventListener("click", () => {
+        navigateTo(item.dataset.section);
+    });
+});
+
+document.querySelectorAll("[data-goto]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+        navigateTo(btn.dataset.goto);
+    });
+});

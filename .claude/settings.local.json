@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show:*)",
+      "Bash(python cdc_snig_avanzado.py)",
+      "Bash(python -c \":*)",
+      "Bash(python fix_indent.py)",
+      "Bash(del \"c:\\\\Users\\\\admin\\\\Desktop\\\\JARIN\\\\Repos\\\\cdc-snig\\\\fix_indent.py\")",
+      "Bash(python \"c:\\\\Users\\\\admin\\\\Desktop\\\\JARIN\\\\Repos\\\\cdc-snig\\\\cdc_snig_avanzado.py\")",
+      "Bash(python fix2.py)"
+    ]
+  }
+}
