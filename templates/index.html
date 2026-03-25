@@ -20,7 +20,7 @@
                     <span class="brand-name">Conversores de Archivos</span>
                 </div>
             </div>
-            <p class="brand-tag">PDF → Excel &nbsp;·&nbsp; Excel → TXT SNIG</p>
+            <p class="brand-tag">PDF → Excel &nbsp;·&nbsp; Excel → TXT SNIG &nbsp;·&nbsp; TXT → Excel</p>
         </div>
     </header>
 
@@ -88,6 +88,38 @@
                     <button type="button" id="snig-submit-btn" class="primary-btn btn-teal">
                         <span class="btn-label" id="snig-btn-label">Generar y descargar TXT</span>
                         <span class="spinner" id="snig-spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="panel-sep"></div>
+
+            <div class="form-panel txt-panel">
+                <div class="panel-header">
+                    <div class="panel-badge txt-badge">TXT → XLS</div>
+                    <div>
+                        <p class="panel-title">TXT SNIG a Excel</p>
+                        <p class="panel-desc">Extraé caravanas de uno o varios archivos TXT a una planilla Excel.</p>
+                    </div>
+                </div>
+
+                <form id="txt-form" method="post" enctype="multipart/form-data" action="/txt-a-excel" novalidate>
+                    <div class="fields-grid">
+                        <div class="field">
+                            <label for="archivo_txt">Archivos TXT</label>
+                            <input type="file" id="archivo_txt" name="archivo_txt" accept=".txt,text/plain" multiple required>
+                        </div>
+                        <div class="field">
+                            <label for="nombre_excel_txt">Nombre del Excel</label>
+                            <input type="text" id="nombre_excel_txt" name="nombre_excel" placeholder="ej: Caravanas_Extraidas">
+                        </div>
+                    </div>
+
+                    <p id="txt-error-message" class="inline-error" role="alert" aria-live="polite"></p>
+
+                    <button type="button" id="txt-submit-btn" class="primary-btn btn-purple">
+                        <span class="btn-label" id="txt-btn-label">Generar y descargar Excel</span>
+                        <span class="spinner" id="txt-spinner" aria-hidden="true"></span>
                     </button>
                 </form>
             </div>

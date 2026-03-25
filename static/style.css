@@ -154,6 +154,7 @@ body {
 
 .pdf-panel::before  { background: linear-gradient(180deg, var(--blue-500), var(--blue-700)); }
 .snig-panel::before { background: linear-gradient(180deg, var(--teal-500), var(--teal-700)); }
+.txt-panel::before  { background: linear-gradient(180deg, #a855f7, #7e22ce); }
 
 .panel-sep {
     border: 0;
@@ -186,6 +187,12 @@ body {
     background: var(--teal-100);
     color: var(--teal-700);
     border-color: rgba(13, 132, 112, 0.22);
+}
+
+.txt-badge {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border-color: rgba(126, 34, 206, 0.22);
 }
 
 .panel-title {
@@ -312,6 +319,17 @@ input[type="file"] {
 .btn-teal:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 9px 24px rgba(13, 132, 112, 0.36);
+    filter: brightness(1.05);
+}
+
+.btn-purple {
+    background: linear-gradient(150deg, #a855f7 0%, #7e22ce 100%);
+    box-shadow: 0 5px 18px rgba(126, 34, 206, 0.28);
+}
+
+.btn-purple:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 24px rgba(126, 34, 206, 0.36);
     filter: brightness(1.05);
 }
 

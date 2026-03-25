@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "gtu_last_downloads_v1";
+const STORAGE_KEY = "gtu_last_downloads_v1";
 const MAX_ITEMS = 5;
 
 const formPdf = document.getElementById("generador-form");
@@ -12,6 +12,12 @@ const submitSnigBtn = document.getElementById("snig-submit-btn");
 const spinnerSnig = document.getElementById("snig-spinner");
 const labelSnig = document.getElementById("snig-btn-label");
 const errorSnig = document.getElementById("snig-error-message");
+
+const formTxt = document.getElementById("txt-form");
+const submitTxtBtn = document.getElementById("txt-submit-btn");
+const spinnerTxt = document.getElementById("txt-spinner");
+const labelTxt = document.getElementById("txt-btn-label");
+const errorTxt = document.getElementById("txt-error-message");
 
 const historyBody = document.getElementById("history-body");
 const toast = document.getElementById("toast");
@@ -208,6 +214,47 @@ async function generateExcelToTxt() {
     }
 }
 
+async function generateTxtToExcel() {
+    if (submitTxtBtn.disabled) {
+        return;
+    }
+
+    clearError(errorTxt);
+
+    const formData = new FormData(formTxt);
+    const nombre = (formData.get("nombre_excel") || "caravanas_extraidas").toString().trim() || "caravanas_extraidas";
+    const fallbackName = `${nombre.replace(/\.xlsx$/i, "")}.xlsx`;
+
+    setLoading(submitTxtBtn, spinnerTxt, labelTxt, true, "Generar y descargar Excel", "Generando...");
+
+    try {
+        const response = await fetch("/txt-a-excel", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(await parseErrorResponse(response, "No se pudo generar el archivo Excel."));
+        }
+
+        const blob = await response.blob();
+        const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
+
+        triggerBlobDownload(blob, filename);
+        pushHistory(filename);
+        showToast("Excel de TXT generado correctamente", false);
+        formTxt.reset();
+    } catch (error) {
+        showError(errorTxt, error.message || "Ocurrió un error inesperado.");
+        showToast("Error al generar Excel", true);
+    } finally {
+        setLoading(submitTxtBtn, spinnerTxt, labelTxt, false, "Generar y descargar Excel", "Generando...");
+    }
+}
+
 submitPdfBtn.addEventListener("click", generatePdfToExcel);
 formPdf.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -218,6 +265,12 @@ submitSnigBtn.addEventListener("click", generateExcelToTxt);
 formSnig.addEventListener("submit", (event) => {
     event.preventDefault();
     generateExcelToTxt();
+});
+
+submitTxtBtn.addEventListener("click", generateTxtToExcel);
+formTxt.addEventListener("submit", (event) => {
+    event.preventDefault();
+    generateTxtToExcel();
 });
 
 renderHistory();

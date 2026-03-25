@@ -1,4 +1,4 @@
-﻿import re
+import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -64,6 +64,25 @@ def extraer_caravanas_snig_excel(ruta_excel: Path):
                         caravanas.append(match)
 
     return caravanas
+
+
+def extraer_caravanas_txt(archivos_txt) -> list[tuple[str, str]]:
+    resultados = []
+    # Usamos ^.*? para tolerar cualquier caracter invisible/BOM al comienzo de la linea
+    pattern = re.compile(r"^.*?\[\|A0000000(8580000\d{8})")
+    for archivo in archivos_txt:
+        if not archivo or not archivo.filename:
+            continue
+        # utf-8-sig remueve la firma BOM automáticamente
+        lineas = archivo.read().decode("utf-8-sig", errors="ignore").splitlines()
+        filename = archivo.filename
+        for linea in lineas:
+            linea = linea.strip()
+            match = pattern.search(linea)
+            if match:
+                caravana = match.group(1)
+                resultados.append((caravana, filename))
+    return resultados
 
 
 def construir_txt_snig(caravanas, guia: str, ahora: datetime | None = None) -> str:
@@ -213,6 +232,53 @@ def excel_a_txt():
         )
     except Exception as exc:
         return respuesta_error(f"Ocurrió un error al procesar el Excel: {exc}", status_code=500)
+
+
+@app.route("/txt-a-excel", methods=["POST"])
+def txt_a_excel():
+    archivos_txt = request.files.getlist("archivo_txt")
+    nombre_archivo = sanitizar_nombre_archivo(request.form.get("nombre_excel", ""))
+
+    if not nombre_archivo:
+        nombre_archivo = "caravanas_extraidas"
+
+    archivos_validos = [archivo for archivo in archivos_txt if archivo and archivo.filename]
+    if not archivos_validos:
+        return respuesta_error("Debes cargar al menos un archivo TXT.")
+
+    if any(not archivo.filename.lower().endswith(".txt") for archivo in archivos_validos):
+        return respuesta_error("Todos los archivos cargados deben ser TXT.")
+
+    try:
+        datos_extraidos = extraer_caravanas_txt(archivos_validos)
+
+        if not datos_extraidos:
+            return respuesta_error("No se encontraron caravanas válidas en los archivos TXT.")
+
+        tmp_excel = tempfile.NamedTemporaryFile(prefix="gtu_txt_", suffix=".xlsx", delete=False)
+        ruta_excel = Path(tmp_excel.name)
+        tmp_excel.close()
+
+        df = pd.DataFrame(datos_extraidos, columns=["Caravana", "Archivo Origen"])
+        df.to_excel(ruta_excel, index=False)
+
+        @after_this_request
+        def cleanup_temporales_txt_excel(response):
+            try:
+                if ruta_excel.exists():
+                    ruta_excel.unlink()
+            except OSError:
+                pass
+            return response
+
+        return send_file(
+            ruta_excel,
+            as_attachment=True,
+            download_name=f"{nombre_archivo}.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as exc:
+        return respuesta_error(f"Ocurrió un error al procesar los TXT: {exc}", status_code=500)
 
 
 if __name__ == "__main__":
