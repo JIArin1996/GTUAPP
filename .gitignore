@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -19,6 +19,9 @@ pdf_temporal
 pdf_temporal.pdf
 tmp_pdfs/
 xls_temporal.xlsx
+output_anexos/
+instance/
+gtuapp.db
 *.log
 
 # OS/editor
