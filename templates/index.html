@@ -6,6 +6,7 @@
     <title>Generador GTU | Conversores</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icono_appgtu.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v6') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="{{ url_for('static', filename='app.js', v='v5') }}" defer></script>
 </head>
 <body>
@@ -20,7 +21,7 @@
                     <span class="brand-name">Conversores de Archivos</span>
                 </div>
             </div>
-            <p class="brand-tag">PDF → Excel &nbsp;·&nbsp; Excel → TXT SNIG &nbsp;·&nbsp; TXT → Excel</p>
+            <p class="brand-tag">PDF → Excel &nbsp;·&nbsp; Excel → TXT SNIG &nbsp;·&nbsp; TXT → Excel &nbsp;·&nbsp; Unir Excel</p>
         </div>
     </header>
 
@@ -120,6 +121,51 @@
                     <button type="button" id="txt-submit-btn" class="primary-btn btn-purple">
                         <span class="btn-label" id="txt-btn-label">Generar y descargar Excel</span>
                         <span class="spinner" id="txt-spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="panel-sep"></div>
+
+            <div class="form-panel merge-panel">
+                <div class="panel-header">
+                    <div class="panel-badge merge-badge">XLS + XLS</div>
+                    <div>
+                        <p class="panel-title">Unir Excel</p>
+                        <p class="panel-desc">Combiná varios archivos Excel en una sola planilla.</p>
+                    </div>
+                </div>
+
+                <form id="merge-form" novalidate>
+                    <div class="fields-grid">
+                        <div class="field">
+                            <label for="archivo_excel_merge">Archivos Excel</label>
+                            <input type="file" id="archivo_excel_merge" name="archivo_excel_merge" accept=".xlsx,.xls,.csv" multiple required>
+                        </div>
+                        <div class="field">
+                            <label for="nombre_excel_merge">Nombre del archivo</label>
+                            <input type="text" id="nombre_excel_merge" name="nombre_excel_merge" placeholder="ej: unido">
+                        </div>
+                        <div class="field">
+                            <label for="hoja_merge">Hoja a leer</label>
+                            <select id="hoja_merge" name="hoja_merge">
+                                <option value="first">Primera hoja de cada archivo</option>
+                                <option value="all">Todas las hojas</option>
+                            </select>
+                        </div>
+                        <div class="field field-checkbox">
+                            <label class="checkbox-label" for="agregar_origen_merge">
+                                <input type="checkbox" id="agregar_origen_merge" name="agregar_origen_merge" checked>
+                                Agregar columna "Archivo origen"
+                            </label>
+                        </div>
+                    </div>
+
+                    <p id="merge-error-message" class="inline-error" role="alert" aria-live="polite"></p>
+
+                    <button type="button" id="merge-submit-btn" class="primary-btn btn-orange">
+                        <span class="btn-label" id="merge-btn-label">Unir y descargar Excel</span>
+                        <span class="spinner" id="merge-spinner" aria-hidden="true"></span>
                     </button>
                 </form>
             </div>
