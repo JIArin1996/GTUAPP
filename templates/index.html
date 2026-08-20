@@ -129,31 +129,40 @@
 
             <div class="form-panel merge-panel">
                 <div class="panel-header">
-                    <div class="panel-badge merge-badge">XLS + XLS</div>
+                    <div class="panel-badge merge-badge" id="merge-badge">XLS + XLS</div>
                     <div>
-                        <p class="panel-title">Unir Excel</p>
-                        <p class="panel-desc">Combiná varios archivos Excel en una sola planilla.</p>
+                        <p class="panel-title">Unir Archivos</p>
+                        <p class="panel-desc">Combiná varios archivos del mismo formato en uno solo.</p>
                     </div>
                 </div>
 
                 <form id="merge-form" novalidate>
                     <div class="fields-grid">
                         <div class="field">
-                            <label for="archivo_excel_merge">Archivos Excel</label>
-                            <input type="file" id="archivo_excel_merge" name="archivo_excel_merge" accept=".xlsx,.xls,.csv" multiple required>
+                            <label for="formato_merge">Formato a unir</label>
+                            <select id="formato_merge" name="formato_merge">
+                                <option value="excel">Excel (.xlsx, .xls, .csv)</option>
+                                <option value="txt">TXT</option>
+                                <option value="pdf">PDF</option>
+                                <option value="imagenes">Imágenes (PNG, JPG)</option>
+                            </select>
                         </div>
                         <div class="field">
-                            <label for="nombre_excel_merge">Nombre del archivo</label>
-                            <input type="text" id="nombre_excel_merge" name="nombre_excel_merge" placeholder="ej: unido">
+                            <label for="archivo_merge" id="archivo-merge-label">Archivos Excel</label>
+                            <input type="file" id="archivo_merge" name="archivo_merge" accept=".xlsx,.xls,.csv" multiple required>
                         </div>
                         <div class="field">
+                            <label for="nombre_merge">Nombre del archivo</label>
+                            <input type="text" id="nombre_merge" name="nombre_merge" placeholder="ej: unido">
+                        </div>
+                        <div class="field" id="hoja-merge-field">
                             <label for="hoja_merge">Hoja a leer</label>
                             <select id="hoja_merge" name="hoja_merge">
                                 <option value="first">Primera hoja de cada archivo</option>
                                 <option value="all">Todas las hojas</option>
                             </select>
                         </div>
-                        <div class="field field-checkbox">
+                        <div class="field field-checkbox" id="origen-merge-field">
                             <label class="checkbox-label" for="agregar_origen_merge">
                                 <input type="checkbox" id="agregar_origen_merge" name="agregar_origen_merge" checked>
                                 Agregar columna "Archivo origen"

@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 from flask import Flask, after_this_request, jsonify, render_template, request, send_file
-from PyPDF2 import PdfReader
+from PIL import Image
+from PyPDF2 import PdfReader, PdfWriter
 
 from parser_utils import procesar_entrada, sanitizar_nombre_archivo
 
@@ -83,6 +84,24 @@ def extraer_caravanas_txt(archivos_txt) -> list[tuple[str, str]]:
                 caravana = match.group(1)
                 resultados.append((caravana, filename))
     return resultados
+
+
+def unir_pdfs(rutas_pdf, ruta_salida: Path) -> Path:
+    escritor = PdfWriter()
+    for ruta_pdf in rutas_pdf:
+        lector = PdfReader(str(ruta_pdf))
+        for pagina in lector.pages:
+            escritor.add_page(pagina)
+    with ruta_salida.open("wb") as archivo_salida:
+        escritor.write(archivo_salida)
+    return ruta_salida
+
+
+def unir_imagenes_a_pdf(rutas_imagenes, ruta_salida: Path) -> Path:
+    imagenes = [Image.open(ruta).convert("RGB") for ruta in rutas_imagenes]
+    primera, resto = imagenes[0], imagenes[1:]
+    primera.save(ruta_salida, save_all=True, append_images=resto)
+    return ruta_salida
 
 
 def construir_txt_snig(caravanas, guia: str, ahora: datetime | None = None) -> str:
@@ -279,6 +298,114 @@ def txt_a_excel():
         )
     except Exception as exc:
         return respuesta_error(f"Ocurrió un error al procesar los TXT: {exc}", status_code=500)
+
+
+@app.route("/unir-pdf", methods=["POST"])
+def unir_pdf():
+    archivos_pdf = request.files.getlist("archivo_pdf_merge")
+    nombre_archivo = sanitizar_nombre_archivo(request.form.get("nombre_pdf_merge", "")) or "pdf_unido"
+
+    archivos_validos = [archivo for archivo in archivos_pdf if archivo and archivo.filename]
+    if not archivos_validos:
+        return respuesta_error("Debes cargar al menos un archivo PDF.")
+
+    if any(not archivo.filename.lower().endswith(".pdf") for archivo in archivos_validos):
+        return respuesta_error("Todos los archivos cargados deben ser PDF.")
+
+    try:
+        temp_dir = Path(tempfile.gettempdir())
+        rutas_pdf = []
+        for idx, archivo in enumerate(archivos_validos):
+            ruta_pdf = temp_dir / f"pdf_unir_gtu_{idx}.pdf"
+            archivo.save(ruta_pdf)
+            rutas_pdf.append(ruta_pdf)
+
+        tmp_salida = tempfile.NamedTemporaryFile(prefix="gtu_pdf_unido_", suffix=".pdf", delete=False)
+        ruta_salida = Path(tmp_salida.name)
+        tmp_salida.close()
+
+        unir_pdfs(rutas_pdf, ruta_salida)
+
+        @after_this_request
+        def cleanup_temporales_unir_pdf(response):
+            for ruta_pdf in rutas_pdf:
+                try:
+                    if ruta_pdf.exists():
+                        ruta_pdf.unlink()
+                except OSError:
+                    pass
+
+            try:
+                if ruta_salida.exists():
+                    ruta_salida.unlink()
+            except OSError:
+                pass
+
+            return response
+
+        return send_file(
+            ruta_salida,
+            as_attachment=True,
+            download_name=f"{nombre_archivo}.pdf",
+            mimetype="application/pdf",
+        )
+    except Exception as exc:
+        return respuesta_error(f"Ocurrió un error al unir los PDF: {exc}", status_code=500)
+
+
+@app.route("/unir-imagenes", methods=["POST"])
+def unir_imagenes():
+    archivos_imagenes = request.files.getlist("archivo_imagen_merge")
+    nombre_archivo = sanitizar_nombre_archivo(request.form.get("nombre_imagen_merge", "")) or "imagenes_unidas"
+
+    archivos_validos = [archivo for archivo in archivos_imagenes if archivo and archivo.filename]
+    if not archivos_validos:
+        return respuesta_error("Debes cargar al menos una imagen.")
+
+    extensiones_validas = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+    if any(not archivo.filename.lower().endswith(extensiones_validas) for archivo in archivos_validos):
+        return respuesta_error("Todos los archivos cargados deben ser imágenes (PNG, JPG, JPEG, WEBP o BMP).")
+
+    try:
+        temp_dir = Path(tempfile.gettempdir())
+        rutas_imagenes = []
+        for idx, archivo in enumerate(archivos_validos):
+            extension = Path(archivo.filename).suffix.lower()
+            ruta_imagen = temp_dir / f"img_unir_gtu_{idx}{extension}"
+            archivo.save(ruta_imagen)
+            rutas_imagenes.append(ruta_imagen)
+
+        tmp_salida = tempfile.NamedTemporaryFile(prefix="gtu_img_unidas_", suffix=".pdf", delete=False)
+        ruta_salida = Path(tmp_salida.name)
+        tmp_salida.close()
+
+        unir_imagenes_a_pdf(rutas_imagenes, ruta_salida)
+
+        @after_this_request
+        def cleanup_temporales_unir_imagenes(response):
+            for ruta_imagen in rutas_imagenes:
+                try:
+                    if ruta_imagen.exists():
+                        ruta_imagen.unlink()
+                except OSError:
+                    pass
+
+            try:
+                if ruta_salida.exists():
+                    ruta_salida.unlink()
+            except OSError:
+                pass
+
+            return response
+
+        return send_file(
+            ruta_salida,
+            as_attachment=True,
+            download_name=f"{nombre_archivo}.pdf",
+            mimetype="application/pdf",
+        )
+    except Exception as exc:
+        return respuesta_error(f"Ocurrió un error al unir las imágenes: {exc}", status_code=500)
 
 
 if __name__ == "__main__":

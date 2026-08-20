@@ -24,6 +24,46 @@ const submitMergeBtn = document.getElementById("merge-submit-btn");
 const spinnerMerge = document.getElementById("merge-spinner");
 const labelMerge = document.getElementById("merge-btn-label");
 const errorMerge = document.getElementById("merge-error-message");
+const formatoMergeSelect = document.getElementById("formato_merge");
+const archivoMergeInput = document.getElementById("archivo_merge");
+const archivoMergeLabel = document.getElementById("archivo-merge-label");
+const nombreMergeInput = document.getElementById("nombre_merge");
+const hojaMergeSelect = document.getElementById("hoja_merge");
+const agregarOrigenMergeCheckbox = document.getElementById("agregar_origen_merge");
+const hojaMergeField = document.getElementById("hoja-merge-field");
+const origenMergeField = document.getElementById("origen-merge-field");
+const mergeBadge = document.getElementById("merge-badge");
+
+const MERGE_FORMATS = {
+    excel: {
+        accept: ".xlsx,.xls,.csv",
+        label: "Archivos Excel",
+        badge: "XLS + XLS",
+        buttonLabel: "Unir y descargar Excel",
+        showExcelOptions: true,
+    },
+    txt: {
+        accept: ".txt,text/plain",
+        label: "Archivos TXT",
+        badge: "TXT + TXT",
+        buttonLabel: "Unir y descargar TXT",
+        showExcelOptions: false,
+    },
+    pdf: {
+        accept: ".pdf,application/pdf",
+        label: "Archivos PDF",
+        badge: "PDF + PDF",
+        buttonLabel: "Unir y descargar PDF",
+        showExcelOptions: false,
+    },
+    imagenes: {
+        accept: ".png,.jpg,.jpeg,.webp,.bmp,image/*",
+        label: "Imágenes",
+        badge: "IMG + PDF",
+        buttonLabel: "Unir y descargar PDF",
+        showExcelOptions: false,
+    },
+};
 
 const historyBody = document.getElementById("history-body");
 const toast = document.getElementById("toast");
@@ -261,92 +301,159 @@ async function generateTxtToExcel() {
     }
 }
 
-async function generateMergeExcel() {
+function updateMergeFormatUI() {
+    const config = MERGE_FORMATS[formatoMergeSelect.value];
+
+    archivoMergeInput.accept = config.accept;
+    archivoMergeInput.value = "";
+    archivoMergeLabel.textContent = config.label;
+    mergeBadge.textContent = config.badge;
+    labelMerge.textContent = config.buttonLabel;
+
+    hojaMergeField.classList.toggle("is-hidden", !config.showExcelOptions);
+    origenMergeField.classList.toggle("is-hidden", !config.showExcelOptions);
+
+    clearError(errorMerge);
+}
+
+async function mergeExcel(archivos, nombre, sheetMode, agregarOrigen) {
+    const allRows = [];
+    let globalHeader = null;
+
+    for (const archivo of archivos) {
+        const buffer = await archivo.arrayBuffer();
+        let libro;
+        try {
+            libro = XLSX.read(buffer, { type: "array", cellDates: true });
+        } catch (err) {
+            continue;
+        }
+
+        const hojas = sheetMode === "all" ? libro.SheetNames : [libro.SheetNames[0]];
+
+        for (const nombreHoja of hojas) {
+            const hoja = libro.Sheets[nombreHoja];
+            if (!hoja) {
+                continue;
+            }
+
+            const datos = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: "" });
+            if (!datos.length) {
+                continue;
+            }
+
+            const encabezado = datos[0];
+            const filas = datos
+                .slice(1)
+                .filter((fila) => fila.some((celda) => celda !== "" && celda !== null && celda !== undefined));
+
+            if (!globalHeader) {
+                globalHeader = agregarOrigen ? ["Archivo origen", ...encabezado] : [...encabezado];
+                allRows.push(globalHeader);
+            }
+
+            const nombreOrigen = hojas.length > 1 ? `${archivo.name} [${nombreHoja}]` : archivo.name;
+
+            filas.forEach((fila) => {
+                const filaCompleta = [...fila];
+                while (filaCompleta.length < encabezado.length) {
+                    filaCompleta.push("");
+                }
+                allRows.push(agregarOrigen ? [nombreOrigen, ...filaCompleta] : filaCompleta);
+            });
+        }
+    }
+
+    if (!globalHeader || allRows.length <= 1) {
+        throw new Error("No se encontraron datos para unir en los archivos cargados.");
+    }
+
+    const libroNuevo = XLSX.utils.book_new();
+    const hojaNueva = XLSX.utils.aoa_to_sheet(allRows);
+    XLSX.utils.book_append_sheet(libroNuevo, hojaNueva, "Unido");
+
+    const filename = `${nombre.replace(/\.xlsx$/i, "")}.xlsx`;
+    XLSX.writeFile(libroNuevo, filename);
+    pushHistory(filename);
+}
+
+async function mergeTxt(archivos, nombre) {
+    const partes = [];
+    for (const archivo of archivos) {
+        const texto = await archivo.text();
+        partes.push(texto.replace(/\s+$/, ""));
+    }
+
+    const contenido = `${partes.join("\n")}\n`;
+    const blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
+    const filename = `${nombre.replace(/\.txt$/i, "")}.txt`;
+
+    triggerBlobDownload(blob, filename);
+    pushHistory(filename);
+}
+
+async function mergeEnServidor(url, campoArchivos, campoNombre, archivos, nombre, fallbackName) {
+    const formData = new FormData();
+    archivos.forEach((archivo) => formData.append(campoArchivos, archivo));
+    formData.append(campoNombre, nombre);
+
+    const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseErrorResponse(response, "No se pudieron unir los archivos."));
+    }
+
+    const blob = await response.blob();
+    const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
+
+    triggerBlobDownload(blob, filename);
+    pushHistory(filename);
+}
+
+async function generateMerge() {
     if (submitMergeBtn.disabled) {
         return;
     }
 
     clearError(errorMerge);
 
-    const archivos = [...document.getElementById("archivo_excel_merge").files];
-    const nombre = (document.getElementById("nombre_excel_merge").value || "unido").trim() || "unido";
-    const sheetMode = document.getElementById("hoja_merge").value;
-    const agregarOrigen = document.getElementById("agregar_origen_merge").checked;
+    const formato = formatoMergeSelect.value;
+    const config = MERGE_FORMATS[formato];
+    const archivos = [...archivoMergeInput.files];
+    const nombre = nombreMergeInput.value.trim() || "unido";
 
     if (!archivos.length) {
-        showError(errorMerge, "Debes cargar al menos un archivo Excel.");
+        showError(errorMerge, "Debes cargar al menos un archivo.");
         return;
     }
 
-    setLoading(submitMergeBtn, spinnerMerge, labelMerge, true, "Unir y descargar Excel", "Uniendo...");
+    setLoading(submitMergeBtn, spinnerMerge, labelMerge, true, config.buttonLabel, "Uniendo...");
 
     try {
-        const allRows = [];
-        let globalHeader = null;
-
-        for (const archivo of archivos) {
-            const buffer = await archivo.arrayBuffer();
-            let libro;
-            try {
-                libro = XLSX.read(buffer, { type: "array", cellDates: true });
-            } catch (err) {
-                continue;
-            }
-
-            const hojas = sheetMode === "all" ? libro.SheetNames : [libro.SheetNames[0]];
-
-            for (const nombreHoja of hojas) {
-                const hoja = libro.Sheets[nombreHoja];
-                if (!hoja) {
-                    continue;
-                }
-
-                const datos = XLSX.utils.sheet_to_json(hoja, { header: 1, defval: "" });
-                if (!datos.length) {
-                    continue;
-                }
-
-                const encabezado = datos[0];
-                const filas = datos
-                    .slice(1)
-                    .filter((fila) => fila.some((celda) => celda !== "" && celda !== null && celda !== undefined));
-
-                if (!globalHeader) {
-                    globalHeader = agregarOrigen ? ["Archivo origen", ...encabezado] : [...encabezado];
-                    allRows.push(globalHeader);
-                }
-
-                const nombreOrigen = hojas.length > 1 ? `${archivo.name} [${nombreHoja}]` : archivo.name;
-
-                filas.forEach((fila) => {
-                    const filaCompleta = [...fila];
-                    while (filaCompleta.length < encabezado.length) {
-                        filaCompleta.push("");
-                    }
-                    allRows.push(agregarOrigen ? [nombreOrigen, ...filaCompleta] : filaCompleta);
-                });
-            }
+        if (formato === "excel") {
+            await mergeExcel(archivos, nombre, hojaMergeSelect.value, agregarOrigenMergeCheckbox.checked);
+        } else if (formato === "txt") {
+            await mergeTxt(archivos, nombre);
+        } else if (formato === "pdf") {
+            await mergeEnServidor("/unir-pdf", "archivo_pdf_merge", "nombre_pdf_merge", archivos, nombre, `${nombre}.pdf`);
+        } else if (formato === "imagenes") {
+            await mergeEnServidor("/unir-imagenes", "archivo_imagen_merge", "nombre_imagen_merge", archivos, nombre, `${nombre}.pdf`);
         }
 
-        if (!globalHeader || allRows.length <= 1) {
-            throw new Error("No se encontraron datos para unir en los archivos cargados.");
-        }
-
-        const libroNuevo = XLSX.utils.book_new();
-        const hojaNueva = XLSX.utils.aoa_to_sheet(allRows);
-        XLSX.utils.book_append_sheet(libroNuevo, hojaNueva, "Unido");
-
-        const filename = `${nombre.replace(/\.xlsx$/i, "")}.xlsx`;
-        XLSX.writeFile(libroNuevo, filename);
-
-        pushHistory(filename);
-        showToast("Excel unido correctamente", false);
+        showToast("Archivos unidos correctamente", false);
         formMerge.reset();
+        updateMergeFormatUI();
     } catch (error) {
         showError(errorMerge, error.message || "Ocurrió un error inesperado.");
-        showToast("Error al unir los Excel", true);
+        showToast("Error al unir los archivos", true);
     } finally {
-        setLoading(submitMergeBtn, spinnerMerge, labelMerge, false, "Unir y descargar Excel", "Uniendo...");
+        setLoading(submitMergeBtn, spinnerMerge, labelMerge, false, config.buttonLabel, "Uniendo...");
     }
 }
 
@@ -368,10 +475,13 @@ formTxt.addEventListener("submit", (event) => {
     generateTxtToExcel();
 });
 
-submitMergeBtn.addEventListener("click", generateMergeExcel);
+formatoMergeSelect.addEventListener("change", updateMergeFormatUI);
+
+submitMergeBtn.addEventListener("click", generateMerge);
 formMerge.addEventListener("submit", (event) => {
     event.preventDefault();
-    generateMergeExcel();
+    generateMerge();
 });
 
+updateMergeFormatUI();
 renderHistory();
