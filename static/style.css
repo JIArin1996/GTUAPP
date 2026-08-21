@@ -287,6 +287,76 @@ select {
     display: none;
 }
 
+/* ─── Reorder files before merging ─────────────────── */
+
+.merge-file-order {
+    display: none;
+    margin-top: 14px;
+    padding: 12px;
+    background: #fafcff;
+    border: 1.5px solid #c4d5eb;
+    border-radius: var(--radius-md);
+}
+
+.merge-file-order.is-visible {
+    display: block;
+}
+
+.merge-file-hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: 0 0 8px;
+}
+
+.merge-file-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.merge-file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 9px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: grab;
+    font-size: 0.86rem;
+    color: var(--ink);
+}
+
+.merge-file-row:active {
+    cursor: grabbing;
+}
+
+.merge-file-row.is-dragging {
+    opacity: 0.5;
+}
+
+.merge-file-grip {
+    color: var(--muted);
+    flex-shrink: 0;
+    display: flex;
+}
+
+.merge-file-index {
+    font-family: monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    width: 16px;
+}
+
+.merge-file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .checkbox-label {
     display: flex;
     align-items: center;
@@ -466,6 +536,22 @@ th {
 }
 
 tr:last-child td { border-bottom: 0; }
+
+.history-filename {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.history-filename:hover {
+    text-decoration: underline;
+    color: var(--blue-700);
+}
 
 .empty-row {
     text-align: center;

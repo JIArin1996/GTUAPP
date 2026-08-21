@@ -1,5 +1,16 @@
 const STORAGE_KEY = "gtu_last_downloads_v1";
-const MAX_ITEMS = 5;
+const MAX_ITEMS = 10;
+
+const TIPO_COLORES = {
+    pdf: "var(--blue-500)",
+    snig: "var(--teal-500)",
+    txt: "#a855f7",
+    merge: "#f59e0b",
+};
+
+const blobCache = new Map();
+let mergeFilesOrder = [];
+let mergeDragSrcIndex = null;
 
 const formPdf = document.getElementById("generador-form");
 const submitPdfBtn = document.getElementById("submit-btn");
@@ -33,6 +44,8 @@ const agregarOrigenMergeCheckbox = document.getElementById("agregar_origen_merge
 const hojaMergeField = document.getElementById("hoja-merge-field");
 const origenMergeField = document.getElementById("origen-merge-field");
 const mergeBadge = document.getElementById("merge-badge");
+const mergeFileOrderWrap = document.getElementById("merge-file-order");
+const mergeFileList = document.getElementById("merge-file-list");
 
 const MERGE_FORMATS = {
     excel: {
@@ -93,13 +106,18 @@ function renderHistory() {
     historyBody.innerHTML = items
         .map((item) => {
             const fecha = new Date(item.timestamp).toLocaleString("es-UY");
-            return `<tr><td>${item.filename}</td><td>${fecha}</td></tr>`;
+            const color = TIPO_COLORES[item.tipo] || "var(--line)";
+            return `<tr><td style="border-left:4px solid ${color}; padding-left:10px;"><button type="button" class="history-filename" data-history-id="${item.id || ""}">${item.filename}</button></td><td>${fecha}</td></tr>`;
         })
         .join("");
 }
 
-function pushHistory(filename) {
-    const next = [{ filename, timestamp: new Date().toISOString() }, ...loadHistory()].slice(0, MAX_ITEMS);
+function pushHistory(filename, tipo, blob) {
+    const id = `h_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    if (blob) {
+        blobCache.set(id, { blob, filename });
+    }
+    const next = [{ id, filename, timestamp: new Date().toISOString(), tipo }, ...loadHistory()].slice(0, MAX_ITEMS);
     saveHistory(next);
     renderHistory();
 }
@@ -113,6 +131,22 @@ function showToast(message, isError) {
         toast.classList.remove("is-visible");
     }, 2600);
 }
+
+historyBody.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-history-id]");
+    if (!btn || !btn.dataset.historyId) {
+        return;
+    }
+
+    const cached = blobCache.get(btn.dataset.historyId);
+    if (!cached) {
+        showToast("Ese archivo ya no está disponible para volver a descargar. Generalo de nuevo.", true);
+        return;
+    }
+
+    triggerBlobDownload(cached.blob, cached.filename);
+    showToast("Descarga iniciada", false);
+});
 
 function setLoading(button, spinner, label, loading, idleText, loadingText) {
     button.disabled = loading;
@@ -208,7 +242,7 @@ async function generatePdfToExcel() {
         const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
 
         triggerBlobDownload(blob, filename);
-        pushHistory(filename);
+        pushHistory(filename, "pdf", blob);
         showToast("Excel generado correctamente", false);
         formPdf.reset();
     } catch (error) {
@@ -249,7 +283,7 @@ async function generateExcelToTxt() {
         const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
 
         triggerBlobDownload(blob, filename);
-        pushHistory(filename);
+        pushHistory(filename, "snig", blob);
         showToast("TXT SNIG generado correctamente", false);
         formSnig.reset();
     } catch (error) {
@@ -290,7 +324,7 @@ async function generateTxtToExcel() {
         const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
 
         triggerBlobDownload(blob, filename);
-        pushHistory(filename);
+        pushHistory(filename, "txt", blob);
         showToast("Excel de TXT generado correctamente", false);
         formTxt.reset();
     } catch (error) {
@@ -313,7 +347,33 @@ function updateMergeFormatUI() {
     hojaMergeField.classList.toggle("is-hidden", !config.showExcelOptions);
     origenMergeField.classList.toggle("is-hidden", !config.showExcelOptions);
 
+    mergeFilesOrder = [];
+    renderMergeFileOrder();
+
     clearError(errorMerge);
+}
+
+function renderMergeFileOrder() {
+    if (mergeFilesOrder.length < 2) {
+        mergeFileList.innerHTML = "";
+        mergeFileOrderWrap.classList.remove("is-visible");
+        return;
+    }
+
+    mergeFileOrderWrap.classList.add("is-visible");
+    mergeFileList.innerHTML = mergeFilesOrder
+        .map(
+            (archivo, index) => `
+                <li class="merge-file-row" draggable="true" data-index="${index}">
+                    <span class="merge-file-grip" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg>
+                    </span>
+                    <span class="merge-file-index">${index + 1}</span>
+                    <span class="merge-file-name">${archivo.name}</span>
+                </li>
+            `
+        )
+        .join("");
 }
 
 async function mergeExcel(archivos, nombre, sheetMode, agregarOrigen) {
@@ -373,8 +433,11 @@ async function mergeExcel(archivos, nombre, sheetMode, agregarOrigen) {
     XLSX.utils.book_append_sheet(libroNuevo, hojaNueva, "Unido");
 
     const filename = `${nombre.replace(/\.xlsx$/i, "")}.xlsx`;
-    XLSX.writeFile(libroNuevo, filename);
-    pushHistory(filename);
+    const wbout = XLSX.write(libroNuevo, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+    triggerBlobDownload(blob, filename);
+    pushHistory(filename, "merge", blob);
 }
 
 async function mergeTxt(archivos, nombre) {
@@ -389,7 +452,7 @@ async function mergeTxt(archivos, nombre) {
     const filename = `${nombre.replace(/\.txt$/i, "")}.txt`;
 
     triggerBlobDownload(blob, filename);
-    pushHistory(filename);
+    pushHistory(filename, "merge", blob);
 }
 
 async function mergeEnServidor(url, campoArchivos, campoNombre, archivos, nombre, fallbackName) {
@@ -413,7 +476,7 @@ async function mergeEnServidor(url, campoArchivos, campoNombre, archivos, nombre
     const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
 
     triggerBlobDownload(blob, filename);
-    pushHistory(filename);
+    pushHistory(filename, "merge", blob);
 }
 
 async function generateMerge() {
@@ -425,7 +488,7 @@ async function generateMerge() {
 
     const formato = formatoMergeSelect.value;
     const config = MERGE_FORMATS[formato];
-    const archivos = [...archivoMergeInput.files];
+    const archivos = mergeFilesOrder.length ? mergeFilesOrder : [...archivoMergeInput.files];
     const nombre = nombreMergeInput.value.trim() || "unido";
 
     if (!archivos.length) {
@@ -476,6 +539,52 @@ formTxt.addEventListener("submit", (event) => {
 });
 
 formatoMergeSelect.addEventListener("change", updateMergeFormatUI);
+
+archivoMergeInput.addEventListener("change", () => {
+    mergeFilesOrder = [...archivoMergeInput.files];
+    renderMergeFileOrder();
+});
+
+mergeFileList.addEventListener("dragstart", (event) => {
+    const row = event.target.closest(".merge-file-row");
+    if (!row) {
+        return;
+    }
+    mergeDragSrcIndex = Number(row.dataset.index);
+    row.classList.add("is-dragging");
+    event.dataTransfer.effectAllowed = "move";
+});
+
+mergeFileList.addEventListener("dragend", (event) => {
+    const row = event.target.closest(".merge-file-row");
+    if (row) {
+        row.classList.remove("is-dragging");
+    }
+    mergeDragSrcIndex = null;
+});
+
+mergeFileList.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+});
+
+mergeFileList.addEventListener("drop", (event) => {
+    event.preventDefault();
+    const row = event.target.closest(".merge-file-row");
+    if (!row || mergeDragSrcIndex === null) {
+        return;
+    }
+
+    const targetIndex = Number(row.dataset.index);
+    if (targetIndex === mergeDragSrcIndex) {
+        return;
+    }
+
+    const [moved] = mergeFilesOrder.splice(mergeDragSrcIndex, 1);
+    mergeFilesOrder.splice(targetIndex, 0, moved);
+    mergeDragSrcIndex = null;
+    renderMergeFileOrder();
+});
 
 submitMergeBtn.addEventListener("click", generateMerge);
 formMerge.addEventListener("submit", (event) => {
