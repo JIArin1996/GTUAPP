@@ -21,13 +21,18 @@
                     <span class="brand-name">Conversores de Archivos</span>
                 </div>
             </div>
-            <p class="brand-tag">PDF → Excel &nbsp;·&nbsp; Excel → TXT SNIG &nbsp;·&nbsp; TXT → Excel &nbsp;·&nbsp; Unir Excel</p>
+            <nav class="app-nav" aria-label="Navegación rápida">
+                <a href="#panel-pdf" class="app-nav-link">PDF → Excel</a>
+                <a href="#panel-snig" class="app-nav-link">Excel → TXT SNIG</a>
+                <a href="#panel-txt" class="app-nav-link">TXT → Excel</a>
+                <a href="#panel-merge" class="app-nav-link">Unir Archivos</a>
+            </nav>
         </div>
     </header>
 
     <main class="shell">
         <section class="hero card">
-            <div class="form-panel pdf-panel">
+            <div class="form-panel pdf-panel" id="panel-pdf">
                 <div class="panel-header">
                     <div class="panel-badge">PDF → XLS</div>
                     <div>
@@ -59,7 +64,7 @@
 
             <div class="panel-sep"></div>
 
-            <div class="form-panel snig-panel">
+            <div class="form-panel snig-panel" id="panel-snig">
                 <div class="panel-header">
                     <div class="panel-badge snig-badge">XLS → TXT</div>
                     <div>
@@ -95,7 +100,7 @@
 
             <div class="panel-sep"></div>
 
-            <div class="form-panel txt-panel">
+            <div class="form-panel txt-panel" id="panel-txt">
                 <div class="panel-header">
                     <div class="panel-badge txt-badge">TXT → XLS</div>
                     <div>
@@ -127,7 +132,7 @@
 
             <div class="panel-sep"></div>
 
-            <div class="form-panel merge-panel">
+            <div class="form-panel merge-panel" id="panel-merge">
                 <div class="panel-header">
                     <div class="panel-badge merge-badge" id="merge-badge">XLS + XLS</div>
                     <div>
