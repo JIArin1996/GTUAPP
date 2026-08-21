@@ -145,6 +145,54 @@ body {
     border-color: rgba(255, 255, 255, 0.28);
 }
 
+.nav-pdf {
+    color: #9cc7ff;
+    background: rgba(51, 120, 212, 0.16);
+    border-color: rgba(51, 120, 212, 0.4);
+}
+
+.nav-pdf:hover {
+    color: #c3ddff;
+    background: rgba(51, 120, 212, 0.28);
+    border-color: rgba(51, 120, 212, 0.6);
+}
+
+.nav-snig {
+    color: #7fe0cf;
+    background: rgba(21, 166, 144, 0.16);
+    border-color: rgba(21, 166, 144, 0.4);
+}
+
+.nav-snig:hover {
+    color: #a9ecdf;
+    background: rgba(21, 166, 144, 0.28);
+    border-color: rgba(21, 166, 144, 0.6);
+}
+
+.nav-txt {
+    color: #d8b4fe;
+    background: rgba(168, 85, 247, 0.16);
+    border-color: rgba(168, 85, 247, 0.4);
+}
+
+.nav-txt:hover {
+    color: #e6cdfe;
+    background: rgba(168, 85, 247, 0.28);
+    border-color: rgba(168, 85, 247, 0.6);
+}
+
+.nav-merge {
+    color: #fbc36a;
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.nav-merge:hover {
+    color: #fdd596;
+    background: rgba(245, 158, 11, 0.28);
+    border-color: rgba(245, 158, 11, 0.6);
+}
+
 /* ─── Shell / Layout ───────────────────────────────── */
 
 .shell {
