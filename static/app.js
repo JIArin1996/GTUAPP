@@ -12,6 +12,71 @@ const blobCache = new Map();
 let mergeFilesOrder = [];
 let mergeDragSrcIndex = null;
 
+const DB_NAME = "gtu_downloads_db";
+const DB_STORE = "archivos";
+const DB_VERSION = 1;
+
+function abrirDb() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+            request.result.createObjectStore(DB_STORE, { keyPath: "id" });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function guardarArchivoDb(id, filename, blob) {
+    try {
+        const db = await abrirDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(DB_STORE, "readwrite");
+            tx.objectStore(DB_STORE).put({ id, filename, blob });
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+    } catch (err) {
+        // Almacenamiento no disponible (modo privado, cuota llena, etc.): la descarga ya se hizo, solo se pierde el re-descargar tras recargar.
+    }
+}
+
+async function leerArchivoDb(id) {
+    try {
+        const db = await abrirDb();
+        const registro = await new Promise((resolve, reject) => {
+            const tx = db.transaction(DB_STORE, "readonly");
+            const req = tx.objectStore(DB_STORE).get(id);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+        db.close();
+        return registro;
+    } catch (err) {
+        return null;
+    }
+}
+
+async function eliminarArchivosDb(ids) {
+    if (!ids.length) {
+        return;
+    }
+    try {
+        const db = await abrirDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(DB_STORE, "readwrite");
+            const store = tx.objectStore(DB_STORE);
+            ids.forEach((id) => store.delete(id));
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+    } catch (err) {
+        // Ignorar: la limpieza es best-effort.
+    }
+}
+
 const formPdf = document.getElementById("generador-form");
 const submitPdfBtn = document.getElementById("submit-btn");
 const spinnerPdf = submitPdfBtn.querySelector(".spinner");
@@ -116,9 +181,16 @@ function pushHistory(filename, tipo, blob) {
     const id = `h_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     if (blob) {
         blobCache.set(id, { blob, filename });
+        guardarArchivoDb(id, filename, blob);
     }
-    const next = [{ id, filename, timestamp: new Date().toISOString(), tipo }, ...loadHistory()].slice(0, MAX_ITEMS);
+
+    const anteriores = loadHistory();
+    const next = [{ id, filename, timestamp: new Date().toISOString(), tipo }, ...anteriores].slice(0, MAX_ITEMS);
     saveHistory(next);
+
+    const idsDescartados = anteriores.slice(MAX_ITEMS - 1).map((item) => item.id).filter(Boolean);
+    eliminarArchivosDb(idsDescartados);
+
     renderHistory();
 }
 
@@ -132,13 +204,23 @@ function showToast(message, isError) {
     }, 2600);
 }
 
-historyBody.addEventListener("click", (event) => {
+historyBody.addEventListener("click", async (event) => {
     const btn = event.target.closest("[data-history-id]");
     if (!btn || !btn.dataset.historyId) {
         return;
     }
 
-    const cached = blobCache.get(btn.dataset.historyId);
+    const id = btn.dataset.historyId;
+    let cached = blobCache.get(id);
+
+    if (!cached) {
+        const registro = await leerArchivoDb(id);
+        if (registro) {
+            cached = { blob: registro.blob, filename: registro.filename };
+            blobCache.set(id, cached);
+        }
+    }
+
     if (!cached) {
         showToast("Ese archivo ya no está disponible para volver a descargar. Generalo de nuevo.", true);
         return;
