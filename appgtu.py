@@ -1,5 +1,7 @@
 import re
+import subprocess
 import tempfile
+from num2words import num2words
 from datetime import datetime
 from pathlib import Path
 
@@ -114,6 +116,211 @@ def construir_txt_snig(caravanas, guia: str, ahora: datetime | None = None) -> s
         for caravana in caravanas
     ]
     return "\n".join(lineas) + "\n"
+
+
+def numero_a_letras(valor: str) -> str:
+    """Convierte un string numérico a texto en mayúsculas (ej: '100' -> 'CIEN')."""
+    try:
+        val = int(valor)
+        if val == 0:
+            return ""
+        return num2words(val, lang='es').upper()
+    except (ValueError, TypeError):
+        return ""
+    
+
+def generar_pdf_oficio_typst(
+    tipo_operacion: str = "",
+    cambio_propiedad: str = "con",
+    # DICOSE A
+    dicose_a: str = "",
+    razon_social_a: str = "",
+    domicilio_a: str = "",
+    # DICOSE B
+    dicose_b: str = "",
+    razon_social_b: str = "",
+    domicilio_b: str = "",
+    # DICOSE C
+    dicose_c: str = "",
+    razon_social_c: str = "",
+    domicilio_c: str = "",
+    # DICOSE D
+    dicose_d: str = "",
+    razon_social_d: str = "",
+    domicilio_d: str = "",
+    # DETALLES VACUNOS
+    vac_toros: str = "",
+    vac_vacas: str = "",
+    vac_nov_3: str = "",
+    vac_nov_2_3: str = "",
+    vac_nov_1_2: str = "",
+    vac_vaq_2: str = "",
+    vac_vaq_1_2: str = "",
+    vac_terneros: str = "",
+    vac_total: str = "",
+    # DETALLES OVINOS
+    ovi_carneros: str = "",
+    ovi_ovejas: str = "",
+    ovi_capones: str = "",
+    ovi_borregas: str = "",
+    ovi_corderas_dl: str = "",
+    ovi_corderos_dl: str = "",
+    ovi_mamones: str = "",
+    ovi_total: str = "",
+    ruta_salida: Path = None
+) -> Path:
+    pos_y_guion = "4.25cm" if cambio_propiedad == "con" else "4.80cm"
+
+    # Conversión de los totales a letras
+    vac_total_letras = numero_a_letras(vac_total)
+    ovi_total_letras = numero_a_letras(ovi_total)
+
+    plantilla_typst = f"""
+    #set page(width: 21.6cm, height: 35.5cm, margin: 0cm)
+    #set text(font: "Liberation Serif")
+
+    // Formateador para los 9 dígitos de cada DICOSE
+    #let formatear-id(cadena) = {{
+      let caracteres = cadena.clusters()
+      stack(
+        dir: ltr,
+        spacing: 1mm,
+        ..caracteres.map(char => box(
+          width: 6mm,
+          height: 8mm,
+          align(center + horizon, text(size: 8mm, top-edge: "bounds", bottom-edge: "bounds")[#char])
+        ))
+      )
+    }}
+
+    // Formateador con auto-escalado horizontal
+    #let texto-casilla(contenido, ancho-max) = {{
+      if contenido == "" {{ return }}
+      layout(size => {{
+        let txt = text(size: 10pt, top-edge: "bounds", bottom-edge: "baseline")[#contenido]
+        let tam = measure(txt)
+        if tam.width > ancho-max {{
+          let factor = (ancho-max / tam.width) * 100%
+          box(
+            width: ancho-max,
+            height: 0pt,
+            baseline: 0pt,
+            align(center, scale(x: factor, reflow: true)[#txt])
+          )
+        }} else {{
+          box(
+            width: ancho-max,
+            height: 0pt,
+            baseline: 0pt,
+            align(center)[#txt]
+          )
+        }}
+      }})
+    }}
+
+    // Formateador para cuadrícula de 5 caracteres (4mm x 6mm, separación 1mm)
+    #let formatear-cantidad(cadena) = {{
+      let chars = str(cadena).clusters()
+      while chars.len() < 5 {{
+        chars.insert(0, "")
+      }}
+      let chars-5 = chars.slice(chars.len() - 5)
+      stack(
+        dir: ltr,
+        spacing: 1mm,
+        ..chars-5.map(char => box(
+          width: 4mm,
+          height: 6mm,
+          align(center + horizon, text(size: 12pt, top-edge: "bounds", bottom-edge: "bounds")[#char])
+        ))
+      )
+    }}
+
+    // ==========================================
+    // TIPO DE OPERACIÓN (Primer campo)
+    // ==========================================
+    #place(dx: 9.5cm, dy: 3.2cm)[
+      #box(
+        height: 0pt,
+        baseline: 0pt,
+        text(size: 12pt, top-edge: "bounds", bottom-edge: "baseline")[{tipo_operacion}]
+      )
+    ]
+
+    // Guion "Con / Sin cambio de propiedad"
+    #place(dx: 6.3cm, dy: {pos_y_guion})[
+      #rect(width: 5mm, height: 2mm, fill: black, outset: 0pt)
+    ]
+
+    // ==========================================
+    // DICOSE A, B, C, D
+    // ==========================================
+    #place(dx: 3.1cm, dy: 7.15cm)[#formatear-id("{dicose_a}")]
+    #place(dx: 3.2cm, dy: 8.5cm)[#texto-casilla("{razon_social_a}", 6.6cm)]
+    #place(dx: 4.1cm, dy: 9.05cm)[#texto-casilla("{domicilio_a}", 5.7cm)]
+
+    #place(dx: 13.1cm, dy: 7.15cm)[#formatear-id("{dicose_b}")]
+    #place(dx: 13.25cm, dy: 8.5cm)[#texto-casilla("{razon_social_b}", 6.65cm)]
+    #place(dx: 14.2cm, dy: 9.05cm)[#texto-casilla("{domicilio_b}", 5.7cm)]
+
+    #place(dx: 3.1cm, dy: 10.6cm)[#formatear-id("{dicose_c}")]
+    #place(dx: 3.2cm, dy: 11.8cm)[#texto-casilla("{razon_social_c}", 6.6cm)]
+    #place(dx: 4.1cm, dy: 12.5cm)[#texto-casilla("{domicilio_c}", 5.7cm)]
+
+    #place(dx: 13.1cm, dy: 10.6cm)[#formatear-id("{dicose_d}")]
+    #place(dx: 13.25cm, dy: 11.8cm)[#texto-casilla("{razon_social_d}", 6.65cm)]
+    #place(dx: 14.2cm, dy: 12.5cm)[#texto-casilla("{domicilio_d}", 5.7cm)]
+
+    // ==========================================
+    // COLUMNA VACUNOS (X = 4cm, Y inicial = 14.2cm, Paso = 8mm)
+    // ==========================================
+    #place(dx: 4.0cm, dy: 14.20cm)[#formatear-cantidad("{vac_toros}")]
+    #place(dx: 4.0cm, dy: 15.05cm)[#formatear-cantidad("{vac_vacas}")]
+    #place(dx: 4.0cm, dy: 15.80cm)[#formatear-cantidad("{vac_nov_3}")]
+    #place(dx: 4.0cm, dy: 16.65cm)[#formatear-cantidad("{vac_nov_2_3}")]
+    #place(dx: 4.0cm, dy: 17.50cm)[#formatear-cantidad("{vac_nov_1_2}")]
+    #place(dx: 4.0cm, dy: 18.30cm)[#formatear-cantidad("{vac_vaq_2}")]
+    #place(dx: 4.0cm, dy: 19.10cm)[#formatear-cantidad("{vac_vaq_1_2}")]
+    #place(dx: 4.0cm, dy: 19.90cm)[#formatear-cantidad("{vac_terneros}")]
+    #place(dx: 4.0cm, dy: 20.70cm)[#formatear-cantidad("{vac_total}")]
+
+    // ==========================================
+    // COLUMNA OVINOS (X = 9cm, Y inicial = 14.2cm, Paso = 8mm)
+    // ==========================================
+    #place(dx: 9.0cm, dy: 14.20cm)[#formatear-cantidad("{ovi_carneros}")]
+    #place(dx: 9.0cm, dy: 15.05cm)[#formatear-cantidad("{ovi_ovejas}")]
+    #place(dx: 9.0cm, dy: 15.80cm)[#formatear-cantidad("{ovi_capones}")]
+    #place(dx: 9.0cm, dy: 16.65cm)[#formatear-cantidad("{ovi_borregas}")]
+    #place(dx: 9.0cm, dy: 17.50cm)[#formatear-cantidad("{ovi_corderas_dl}")]
+    #place(dx: 9.0cm, dy: 18.30cm)[#formatear-cantidad("{ovi_corderos_dl}")]
+    #place(dx: 9.0cm, dy: 19.10cm)[#formatear-cantidad("{ovi_mamones}")]
+    #place(dx: 9.0cm, dy: 19.90cm)[#formatear-cantidad("{ovi_total}")]
+
+    // ==========================================
+    // TOTALES EN LETRAS (Y = 35.5cm - 13.25cm = 22.25cm)
+    // ==========================================
+    #place(dx: 4.75cm, dy: 21.9cm)[#texto-casilla("{vac_total_letras}", 7.25cm)]
+    #place(dx: 15.4cm, dy: 21.9cm)[#texto-casilla("{ovi_total_letras}", 5.0cm)]
+    """
+
+    tmp_typ = tempfile.NamedTemporaryFile(prefix="gtu_oficio_", suffix=".typ", delete=False, mode="w", encoding="utf-8")
+    ruta_typ = Path(tmp_typ.name)
+    tmp_typ.write(plantilla_typst)
+    tmp_typ.close()
+
+    try:
+        subprocess.run(
+            ["typst", "compile", str(ruta_typ), str(ruta_salida)],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return ruta_salida
+    except subprocess.CalledProcessError as err:
+        raise RuntimeError(f"Error al compilar el PDF con Typst: {err.stderr}")
+    finally:
+        if ruta_typ.exists():
+            ruta_typ.unlink()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -408,5 +615,92 @@ def unir_imagenes():
         return respuesta_error(f"Ocurrió un error al unir las imágenes: {exc}", status_code=500)
 
 
+@app.route("/generar-oficio", methods=["POST"])
+def generar_oficio():
+    tipo_operacion = request.form.get("tipo_operacion", "").strip()
+    cambio_propiedad = request.form.get("cambio_propiedad", "con")
+
+    # Bloques DICOSE (A, B, C, D)
+    dicose_a = request.form.get("dicose_a", "").strip()
+    razon_social_a = request.form.get("razon_social_a", "").strip()
+    domicilio_a = request.form.get("domicilio_a", "").strip()
+
+    dicose_b = request.form.get("dicose_b", "").strip()
+    razon_social_b = request.form.get("razon_social_b", "").strip()
+    domicilio_b = request.form.get("domicilio_b", "").strip()
+
+    dicose_c = request.form.get("dicose_c", "").strip()
+    razon_social_c = request.form.get("razon_social_c", "").strip()
+    domicilio_c = request.form.get("domicilio_c", "").strip()
+
+    dicose_d = request.form.get("dicose_d", "").strip()
+    razon_social_d = request.form.get("razon_social_d", "").strip()
+    domicilio_d = request.form.get("domicilio_d", "").strip()
+
+    # Vacunos
+    vac_toros = request.form.get("vac_toros", "").strip()
+    vac_vacas = request.form.get("vac_vacas", "").strip()
+    vac_nov_3 = request.form.get("vac_nov_3", "").strip()
+    vac_nov_2_3 = request.form.get("vac_nov_2_3", "").strip()
+    vac_nov_1_2 = request.form.get("vac_nov_1_2", "").strip()
+    vac_vaq_2 = request.form.get("vac_vaq_2", "").strip()
+    vac_vaq_1_2 = request.form.get("vac_vaq_1_2", "").strip()
+    vac_terneros = request.form.get("vac_terneros", "").strip()
+    vac_total = request.form.get("vac_total", "").strip()
+
+    # Ovinos (Corregidos nombres para coincidir con la plantilla HTML)
+    ovi_carneros = request.form.get("ovi_carneros", "").strip()
+    ovi_ovejas = request.form.get("ovi_ovejas", "").strip()
+    ovi_capones = request.form.get("ovi_capones", "").strip()
+    ovi_borregas = request.form.get("ovi_borregas", "").strip()
+    ovi_corderas_dl = request.form.get("ovi_corderas_dl", "").strip()
+    ovi_corderos_dl = request.form.get("ovi_corderos_dl", "").strip()
+    ovi_mamones = request.form.get("ovi_mamones", "").strip()
+    ovi_total = request.form.get("ovi_total", "").strip()
+
+    nombre_archivo = sanitizar_nombre_archivo(request.form.get("nombre_oficio", "")) or "oficio_prueba"
+
+    try:
+        tmp_pdf = tempfile.NamedTemporaryFile(prefix="gtu_oficio_out_", suffix=".pdf", delete=False)
+        ruta_salida = Path(tmp_pdf.name)
+        tmp_pdf.close()
+
+        generar_pdf_oficio_typst(
+            tipo_operacion=tipo_operacion,
+            cambio_propiedad=cambio_propiedad,
+            dicose_a=dicose_a, razon_social_a=razon_social_a, domicilio_a=domicilio_a,
+            dicose_b=dicose_b, razon_social_b=razon_social_b, domicilio_b=domicilio_b,
+            dicose_c=dicose_c, razon_social_c=razon_social_c, domicilio_c=domicilio_c,
+            dicose_d=dicose_d, razon_social_d=razon_social_d, domicilio_d=domicilio_d,
+            vac_toros=vac_toros, vac_vacas=vac_vacas, vac_nov_3=vac_nov_3,
+            vac_nov_2_3=vac_nov_2_3, vac_nov_1_2=vac_nov_1_2, vac_vaq_2=vac_vaq_2,
+            vac_vaq_1_2=vac_vaq_1_2, vac_terneros=vac_terneros, vac_total=vac_total,
+            ovi_carneros=ovi_carneros, ovi_ovejas=ovi_ovejas, ovi_capones=ovi_capones,
+            ovi_borregas=ovi_borregas, ovi_corderas_dl=ovi_corderas_dl,
+            ovi_corderos_dl=ovi_corderos_dl, ovi_mamones=ovi_mamones, ovi_total=ovi_total,
+            ruta_salida=ruta_salida
+        )
+
+        @after_this_request
+        def cleanup_temporales_oficio(response):
+            try:
+                if ruta_salida.exists():
+                    ruta_salida.unlink()
+            except OSError:
+                pass
+            return response
+
+        return send_file(
+            ruta_salida,
+            as_attachment=False,
+            download_name=f"{nombre_archivo}.pdf",
+            mimetype="application/pdf",
+        )
+    except Exception as exc:
+        return respuesta_error(f"Error al generar el oficio: {exc}", status_code=500)
+    
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(host="127.0.0.1", port=5000, debug=True)
+
+#if __name__ == "__main__":
+#    app.run(debug=False)
