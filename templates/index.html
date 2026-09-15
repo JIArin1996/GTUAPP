@@ -323,6 +323,34 @@
                         </div>
                     </div>
 
+                    <!-- FECHA Y CÉDULA FIRMA -->
+                    <h4 style="margin: 1.5rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">Fecha y Firma</h4>
+                    <div class="fields-grid" style="grid-template-columns: 1fr 1fr 1fr 2fr; gap: 1rem;">
+                        <div class="field">
+                            <label for="fecha_dia">Día</label>
+                            <input type="number" id="fecha_dia" name="fecha_dia" min="1" max="31" placeholder="DD">
+                        </div>
+                        <div class="field">
+                            <label for="fecha_mes">Mes</label>
+                            <input type="number" id="fecha_mes" name="fecha_mes" min="1" max="12" placeholder="MM">
+                        </div>
+                        <div class="field">
+                            <label for="fecha_anio">Año</label>
+                            <input type="number" id="fecha_anio" name="fecha_anio" placeholder="YY o YYYY">
+                        </div>
+                        <div class="field">
+                            <label for="ci_firma">Cédula Firma</label>
+                            <input type="text" id="ci_firma" name="ci_firma" maxlength="8" placeholder="8 dígitos sin puntos ni guion">
+                        </div>
+                    </div>
+
+                    <!-- RUT VENDEDOR -->
+                    <h4 style="margin: 1.5rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">Datos del Vendedor</h4>
+                    <div class="field">
+                        <label for="rut_vendedor">RUT Vendedor</label>
+                        <input type="text" id="rut_vendedor" name="rut_vendedor" maxlength="13" placeholder="13 dígitos">
+                    </div>
+
                     <!-- Nombre del Archivo -->
                     <div class="field" style="margin-top: 1.5rem;">
                         <label for="nombre_oficio">Nombre del PDF</label>

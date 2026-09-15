@@ -1,18 +1,28 @@
+import os
 import re
 import subprocess
 import tempfile
 from num2words import num2words
 from datetime import datetime
 from pathlib import Path
-
 import pandas as pd
 from flask import Flask, after_this_request, jsonify, render_template, request, send_file
 from PIL import Image
 from PyPDF2 import PdfReader, PdfWriter
-
 from parser_utils import procesar_entrada, sanitizar_nombre_archivo
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
+
+ENV = os.getenv("FLASK_ENV", "production").lower()
+IS_DEV = ENV == "development"
+
+app.config["TEMPLATES_AUTO_RELOAD"] = IS_DEV
+app.config["DEBUG"] = IS_DEV
+
+
 SNIG_PATTERN = re.compile(r"(?<!\d)(8580000\d{8})(?!\d)")
 TXT_SUFFIX = "|.|.|.|.|.|.|.|.|.|.|]"
 TXT_PREFIX = "A0000000"
@@ -132,54 +142,43 @@ def numero_a_letras(valor: str) -> str:
 def generar_pdf_oficio_typst(
     tipo_operacion: str = "",
     cambio_propiedad: str = "con",
-    # DICOSE A
-    dicose_a: str = "",
-    razon_social_a: str = "",
-    domicilio_a: str = "",
-    # DICOSE B
-    dicose_b: str = "",
-    razon_social_b: str = "",
-    domicilio_b: str = "",
-    # DICOSE C
-    dicose_c: str = "",
-    razon_social_c: str = "",
-    domicilio_c: str = "",
-    # DICOSE D
-    dicose_d: str = "",
-    razon_social_d: str = "",
-    domicilio_d: str = "",
-    # DETALLES VACUNOS
-    vac_toros: str = "",
-    vac_vacas: str = "",
-    vac_nov_3: str = "",
-    vac_nov_2_3: str = "",
-    vac_nov_1_2: str = "",
-    vac_vaq_2: str = "",
-    vac_vaq_1_2: str = "",
-    vac_terneros: str = "",
-    vac_total: str = "",
-    # DETALLES OVINOS
-    ovi_carneros: str = "",
-    ovi_ovejas: str = "",
-    ovi_capones: str = "",
-    ovi_borregas: str = "",
-    ovi_corderas_dl: str = "",
-    ovi_corderos_dl: str = "",
-    ovi_mamones: str = "",
-    ovi_total: str = "",
+    # DICOSE
+    dicose_a: str = "", razon_social_a: str = "", domicilio_a: str = "",
+    dicose_b: str = "", razon_social_b: str = "", domicilio_b: str = "",
+    dicose_c: str = "", razon_social_c: str = "", domicilio_c: str = "",
+    dicose_d: str = "", razon_social_d: str = "", domicilio_d: str = "",
+    # VACUNOS
+    vac_toros: str = "", vac_vacas: str = "", vac_nov_3: str = "",
+    vac_nov_2_3: str = "", vac_nov_1_2: str = "", vac_vaq_2: str = "",
+    vac_vaq_1_2: str = "", vac_terneros: str = "", vac_total: str = "",
+    # OVINOS
+    ovi_carneros: str = "", ovi_ovejas: str = "", ovi_capones: str = "",
+    ovi_borregas: str = "", ovi_corderas_dl: str = "", ovi_corderos_dl: str = "",
+    ovi_mamones: str = "", ovi_total: str = "",
+    # FECHA, CI Y RUT
+    fecha_dia: str = "",
+    fecha_mes: str = "",
+    fecha_anio: str = "",
+    ci_firma: str = "",
+    rut_vendedor: str = "",
     ruta_salida: Path = None
 ) -> Path:
     pos_y_guion = "4.25cm" if cambio_propiedad == "con" else "4.80cm"
 
-    # Conversión de los totales a letras
     vac_total_letras = numero_a_letras(vac_total)
     ovi_total_letras = numero_a_letras(ovi_total)
+
+    # Conversión y formateo previo de datos
+    dia_fmt = f"{int(fecha_dia):02d}" if fecha_dia.isdigit() else fecha_dia.zfill(2)
+    mes_fmt = f"{int(fecha_mes):02d}" if fecha_mes.isdigit() else fecha_mes.zfill(2)
+    anio_fmt = str(fecha_anio)[-2:].zfill(2) if fecha_anio else ""
+    ci_fmt = ci_firma.zfill(8)[-8:] if ci_firma else ""
+    rut_fmt = rut_vendedor.zfill(13)[-13:] if rut_vendedor else ""
 
     plantilla_typst = f"""
     #set page(width: 21.6cm, height: 35.5cm, margin: 0cm)
     #set text(font: "Liberation Serif")
 
-    // Formateador para los 9 dígitos de cada DICOSE
     #let formatear-id(cadena) = {{
       let caracteres = cadena.clusters()
       stack(
@@ -193,7 +192,6 @@ def generar_pdf_oficio_typst(
       )
     }}
 
-    // Formateador con auto-escalado horizontal
     #let texto-casilla(contenido, ancho-max) = {{
       if contenido == "" {{ return }}
       layout(size => {{
@@ -218,7 +216,6 @@ def generar_pdf_oficio_typst(
       }})
     }}
 
-    // Formateador para cuadrícula de 5 caracteres (4mm x 6mm, separación 1mm)
     #let formatear-cantidad(cadena) = {{
       let chars = str(cadena).clusters()
       while chars.len() < 5 {{
@@ -236,9 +233,55 @@ def generar_pdf_oficio_typst(
       )
     }}
 
-    // ==========================================
-    // TIPO DE OPERACIÓN (Primer campo)
-    // ==========================================
+    // Formateador para casillas fijas de N caracteres (4mm x 6mm, sep 1mm)
+    #let formatear-fijo(cadena, largo) = {{
+      let chars = str(cadena).clusters()
+      while chars.len() < largo {{
+        chars.insert(0, "")
+      }}
+      let chars-final = chars.slice(chars.len() - largo)
+      stack(
+        dir: ltr,
+        spacing: 1mm,
+        ..chars-final.map(char => box(
+          width: 4mm,
+          height: 6mm,
+          align(center + horizon, text(size: 12pt, top-edge: "bounds", bottom-edge: "bounds")[#char])
+        ))
+      )
+    }}
+
+    // Formateador para Cédula (8 dígitos, último dígito separado por 2mm)
+    #let formatear-ci(cadena) = {{
+      let chars = str(cadena).clusters()
+      while chars.len() < 8 {{
+        chars.insert(0, "")
+      }}
+      let c = chars.slice(chars.len() - 8)
+      let primeros = c.slice(0, 7)
+      let ultimo = c.at(7)
+
+      stack(
+        dir: ltr,
+        spacing: 2mm,
+        stack(
+          dir: ltr,
+          spacing: 1mm,
+          ..primeros.map(char => box(
+            width: 4mm,
+            height: 6mm,
+            align(center + horizon, text(size: 12pt, top-edge: "bounds", bottom-edge: "bounds")[#char])
+          ))
+        ),
+        box(
+          width: 4mm,
+          height: 6mm,
+          align(center + horizon, text(size: 12pt, top-edge: "bounds", bottom-edge: "bounds")[#ultimo])
+        )
+      )
+    }}
+
+    // TIPO DE OPERACIÓN
     #place(dx: 9.5cm, dy: 3.2cm)[
       #box(
         height: 0pt,
@@ -252,9 +295,7 @@ def generar_pdf_oficio_typst(
       #rect(width: 5mm, height: 2mm, fill: black, outset: 0pt)
     ]
 
-    // ==========================================
     // DICOSE A, B, C, D
-    // ==========================================
     #place(dx: 3.1cm, dy: 7.15cm)[#formatear-id("{dicose_a}")]
     #place(dx: 3.2cm, dy: 8.5cm)[#texto-casilla("{razon_social_a}", 6.6cm)]
     #place(dx: 4.1cm, dy: 9.05cm)[#texto-casilla("{domicilio_a}", 5.7cm)]
@@ -271,9 +312,7 @@ def generar_pdf_oficio_typst(
     #place(dx: 13.25cm, dy: 11.8cm)[#texto-casilla("{razon_social_d}", 6.65cm)]
     #place(dx: 14.2cm, dy: 12.5cm)[#texto-casilla("{domicilio_d}", 5.7cm)]
 
-    // ==========================================
-    // COLUMNA VACUNOS (X = 4cm, Y inicial = 14.2cm, Paso = 8mm)
-    // ==========================================
+    // COLUMNA VACUNOS
     #place(dx: 4.0cm, dy: 14.20cm)[#formatear-cantidad("{vac_toros}")]
     #place(dx: 4.0cm, dy: 15.05cm)[#formatear-cantidad("{vac_vacas}")]
     #place(dx: 4.0cm, dy: 15.80cm)[#formatear-cantidad("{vac_nov_3}")]
@@ -284,9 +323,7 @@ def generar_pdf_oficio_typst(
     #place(dx: 4.0cm, dy: 19.90cm)[#formatear-cantidad("{vac_terneros}")]
     #place(dx: 4.0cm, dy: 20.70cm)[#formatear-cantidad("{vac_total}")]
 
-    // ==========================================
-    // COLUMNA OVINOS (X = 9cm, Y inicial = 14.2cm, Paso = 8mm)
-    // ==========================================
+    // COLUMNA OVINOS
     #place(dx: 9.0cm, dy: 14.20cm)[#formatear-cantidad("{ovi_carneros}")]
     #place(dx: 9.0cm, dy: 15.05cm)[#formatear-cantidad("{ovi_ovejas}")]
     #place(dx: 9.0cm, dy: 15.80cm)[#formatear-cantidad("{ovi_capones}")]
@@ -296,11 +333,20 @@ def generar_pdf_oficio_typst(
     #place(dx: 9.0cm, dy: 19.10cm)[#formatear-cantidad("{ovi_mamones}")]
     #place(dx: 9.0cm, dy: 19.90cm)[#formatear-cantidad("{ovi_total}")]
 
-    // ==========================================
-    // TOTALES EN LETRAS (Y = 35.5cm - 13.25cm = 22.25cm)
-    // ==========================================
+    // TOTALES EN LETRAS
     #place(dx: 4.75cm, dy: 21.9cm)[#texto-casilla("{vac_total_letras}", 7.25cm)]
     #place(dx: 15.4cm, dy: 21.9cm)[#texto-casilla("{ovi_total_letras}", 5.0cm)]
+
+    // FECHA (35.5cm - 5.25cm = 30.25cm)
+    #place(dx: 7.25cm, dy: 30.35cm)[#formatear-fijo("{dia_fmt}", 2)]
+    #place(dx: 9.05cm, dy: 30.35cm)[#formatear-fijo("{mes_fmt}", 2)]
+    #place(dx: 10.85cm, dy: 30.35cm)[#formatear-fijo("{anio_fmt}", 2)]
+
+    // CÉDULA FIRMA (35.5cm - 5.40cm = 30.10cm)
+    #place(dx: 16.55cm, dy: 30.2cm)[#formatear-ci("{ci_fmt}")]
+
+    // RUT VENDEDOR (35.5cm - 3.15cm = 32.35cm)
+    #place(dx: 5.30cm, dy: 31.9cm)[#formatear-fijo("{rut_fmt}", 13)]
     """
 
     tmp_typ = tempfile.NamedTemporaryFile(prefix="gtu_oficio_", suffix=".typ", delete=False, mode="w", encoding="utf-8")
@@ -620,7 +666,7 @@ def generar_oficio():
     tipo_operacion = request.form.get("tipo_operacion", "").strip()
     cambio_propiedad = request.form.get("cambio_propiedad", "con")
 
-    # Bloques DICOSE (A, B, C, D)
+    # Bloques DICOSE
     dicose_a = request.form.get("dicose_a", "").strip()
     razon_social_a = request.form.get("razon_social_a", "").strip()
     domicilio_a = request.form.get("domicilio_a", "").strip()
@@ -648,7 +694,7 @@ def generar_oficio():
     vac_terneros = request.form.get("vac_terneros", "").strip()
     vac_total = request.form.get("vac_total", "").strip()
 
-    # Ovinos (Corregidos nombres para coincidir con la plantilla HTML)
+    # Ovinos
     ovi_carneros = request.form.get("ovi_carneros", "").strip()
     ovi_ovejas = request.form.get("ovi_ovejas", "").strip()
     ovi_capones = request.form.get("ovi_capones", "").strip()
@@ -657,6 +703,13 @@ def generar_oficio():
     ovi_corderos_dl = request.form.get("ovi_corderos_dl", "").strip()
     ovi_mamones = request.form.get("ovi_mamones", "").strip()
     ovi_total = request.form.get("ovi_total", "").strip()
+
+    # Nuevos Campos
+    fecha_dia = request.form.get("fecha_dia", "").strip()
+    fecha_mes = request.form.get("fecha_mes", "").strip()
+    fecha_anio = request.form.get("fecha_anio", "").strip()
+    ci_firma = request.form.get("ci_firma", "").strip()
+    rut_vendedor = request.form.get("rut_vendedor", "").strip()
 
     nombre_archivo = sanitizar_nombre_archivo(request.form.get("nombre_oficio", "")) or "oficio_prueba"
 
@@ -678,6 +731,8 @@ def generar_oficio():
             ovi_carneros=ovi_carneros, ovi_ovejas=ovi_ovejas, ovi_capones=ovi_capones,
             ovi_borregas=ovi_borregas, ovi_corderas_dl=ovi_corderas_dl,
             ovi_corderos_dl=ovi_corderos_dl, ovi_mamones=ovi_mamones, ovi_total=ovi_total,
+            fecha_dia=fecha_dia, fecha_mes=fecha_mes, fecha_anio=fecha_anio,
+            ci_firma=ci_firma, rut_vendedor=rut_vendedor,
             ruta_salida=ruta_salida
         )
 
@@ -700,7 +755,8 @@ def generar_oficio():
         return respuesta_error(f"Error al generar el oficio: {exc}", status_code=500)
     
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
-
-#if __name__ == "__main__":
-#    app.run(debug=False)
+    app.run(
+        host="127.0.0.1",
+        port=int(os.getenv("PORT", 5000)),
+        debug=IS_DEV
+    )
