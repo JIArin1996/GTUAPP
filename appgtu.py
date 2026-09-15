@@ -6,6 +6,7 @@ from num2words import num2words
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+import typst
 from flask import Flask, after_this_request, jsonify, render_template, request, send_file
 from PIL import Image
 from PyPDF2 import PdfReader, PdfWriter
@@ -355,15 +356,12 @@ def generar_pdf_oficio_typst(
     tmp_typ.close()
 
     try:
-        subprocess.run(
-            ["typst", "compile", str(ruta_typ), str(ruta_salida)],
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        typst.compile(str(ruta_typ), output=str(ruta_salida))
         return ruta_salida
-    except subprocess.CalledProcessError as err:
-        raise RuntimeError(f"Error al compilar el PDF con Typst: {err.stderr}")
+    except RuntimeError as err:
+        raise RuntimeError(f"Error al compilar el PDF con Typst: {err}")
+    except Exception as err:
+        raise RuntimeError(f"Error inesperado durante la compilación: {err}")
     finally:
         if ruta_typ.exists():
             ruta_typ.unlink()
