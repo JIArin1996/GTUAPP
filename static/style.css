@@ -455,6 +455,59 @@ select {
     white-space: nowrap;
 }
 
+.pdf-file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 9px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 0.86rem;
+    color: var(--ink);
+}
+
+.pdf-file-row .merge-file-index {
+    width: auto;
+}
+
+.pdf-file-name-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 5px 7px;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+}
+
+.pdf-file-name-input:hover,
+.pdf-file-name-input:focus {
+    border-color: var(--line);
+    background: #fafcff;
+    outline: none;
+}
+
+.pdf-file-remove {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.pdf-file-remove:hover {
+    background: #fee2e2;
+    color: var(--danger);
+}
+
 .checkbox-label {
     display: flex;
     align-items: center;

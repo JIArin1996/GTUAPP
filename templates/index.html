@@ -44,7 +44,7 @@
 
                 <form id="generador-form" method="post" enctype="multipart/form-data" action="/" novalidate>
                     <div class="fields-grid">
-                        <div class="field">
+                        <div class="field" id="field-nombre-archivo">
                             <label for="nombre_archivo">Nombre del archivo</label>
                             <input type="text" id="nombre_archivo" name="nombre_archivo" placeholder="ej: Venta_Cliente" required>
                         </div>
@@ -52,6 +52,17 @@
                             <label for="archivo_pdf">Archivos PDF</label>
                             <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" multiple required>
                         </div>
+                        <div class="field field-checkbox">
+                            <label class="checkbox-label" for="pdf_modo_individual">
+                                <input type="checkbox" id="pdf_modo_individual">
+                                Generar un Excel por cada PDF cargado
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="merge-file-order" id="pdf-file-order">
+                        <p class="merge-file-hint">Se generará un Excel por cada PDF. Podés cambiar el nombre o sacar alguno de la lista.</p>
+                        <ul class="merge-file-list" id="pdf-file-list"></ul>
                     </div>
 
                     <p id="error-message" class="inline-error{% if error %} is-visible{% endif %}" role="alert" aria-live="polite">{% if error %}{{ error }}{% endif %}</p>
