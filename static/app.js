@@ -82,6 +82,14 @@ const submitPdfBtn = document.getElementById("submit-btn");
 const spinnerPdf = submitPdfBtn.querySelector(".spinner");
 const labelPdf = submitPdfBtn.querySelector(".btn-label");
 const errorPdf = document.getElementById("error-message");
+const campoNombreArchivo = document.getElementById("field-nombre-archivo");
+const nombreArchivoInput = document.getElementById("nombre_archivo");
+const archivoPdfInput = document.getElementById("archivo_pdf");
+const pdfModoIndividualCheckbox = document.getElementById("pdf_modo_individual");
+const pdfFileOrderWrap = document.getElementById("pdf-file-order");
+const pdfFileList = document.getElementById("pdf-file-list");
+
+let pdfFilesOrder = [];
 
 const formSnig = document.getElementById("snig-form");
 const submitSnigBtn = document.getElementById("snig-submit-btn");
@@ -294,12 +302,156 @@ function triggerBlobDownload(blob, filename) {
     URL.revokeObjectURL(objectUrl);
 }
 
+function nombreSinExtension(filename) {
+    return filename.replace(/\.pdf$/i, "");
+}
+
+function renderPdfFileOrder() {
+    if (!pdfModoIndividualCheckbox.checked || pdfFilesOrder.length === 0) {
+        pdfFileList.innerHTML = "";
+        pdfFileOrderWrap.classList.remove("is-visible");
+        return;
+    }
+
+    pdfFileOrderWrap.classList.add("is-visible");
+    pdfFileList.innerHTML = pdfFilesOrder
+        .map(
+            (item, index) => `
+                <li class="pdf-file-row" data-index="${index}">
+                    <span class="merge-file-index">${index + 1}</span>
+                    <input type="text" class="pdf-file-name-input" data-index="${index}" value="${item.nombre}">
+                    <button type="button" class="pdf-file-remove" data-index="${index}" title="Quitar de la lista" aria-label="Quitar de la lista">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </li>
+            `
+        )
+        .join("");
+}
+
+function syncPdfFilesFromInput() {
+    pdfFilesOrder = [...archivoPdfInput.files].map((file) => ({
+        file,
+        nombre: nombreSinExtension(file.name),
+    }));
+    renderPdfFileOrder();
+}
+
+function updatePdfModoUI() {
+    const modoIndividual = pdfModoIndividualCheckbox.checked;
+    campoNombreArchivo.classList.toggle("is-hidden", modoIndividual);
+    nombreArchivoInput.required = !modoIndividual;
+
+    if (modoIndividual) {
+        syncPdfFilesFromInput();
+    } else {
+        pdfFilesOrder = [];
+        renderPdfFileOrder();
+    }
+}
+
+pdfModoIndividualCheckbox.addEventListener("change", updatePdfModoUI);
+
+archivoPdfInput.addEventListener("change", () => {
+    if (pdfModoIndividualCheckbox.checked) {
+        syncPdfFilesFromInput();
+    }
+});
+
+pdfFileList.addEventListener("input", (event) => {
+    const input = event.target.closest(".pdf-file-name-input");
+    if (!input) {
+        return;
+    }
+    const index = Number(input.dataset.index);
+    if (pdfFilesOrder[index]) {
+        pdfFilesOrder[index].nombre = input.value;
+    }
+});
+
+pdfFileList.addEventListener("click", (event) => {
+    const btn = event.target.closest(".pdf-file-remove");
+    if (!btn) {
+        return;
+    }
+    const index = Number(btn.dataset.index);
+    pdfFilesOrder.splice(index, 1);
+    renderPdfFileOrder();
+});
+
+async function generarExcelDesdePdf(archivoPdf, nombreArchivo) {
+    const formData = new FormData();
+    formData.append("archivo_pdf", archivoPdf);
+    formData.append("nombre_archivo", nombreArchivo);
+
+    const response = await fetch("/", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseErrorResponse(response, "No se pudo generar el archivo Excel."));
+    }
+
+    const blob = await response.blob();
+    const fallbackName = `${nombreArchivo.replace(/\.xlsx$/i, "")}.xlsx`;
+    const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
+
+    triggerBlobDownload(blob, filename);
+    pushHistory(filename, "pdf", blob);
+}
+
+async function generatePdfToExcelIndividual() {
+    if (!pdfFilesOrder.length) {
+        showError(errorPdf, "Debes cargar al menos un archivo PDF.");
+        return;
+    }
+
+    setLoading(submitPdfBtn, spinnerPdf, labelPdf, true, "Generar y descargar Excel", "Generando...");
+
+    let generados = 0;
+    let primerError = null;
+
+    for (const item of pdfFilesOrder) {
+        const nombre = item.nombre.trim() || nombreSinExtension(item.file.name);
+        try {
+            await generarExcelDesdePdf(item.file, nombre);
+            generados += 1;
+        } catch (error) {
+            primerError = primerError || error;
+        }
+    }
+
+    setLoading(submitPdfBtn, spinnerPdf, labelPdf, false, "Generar y descargar Excel", "Generando...");
+
+    if (generados > 0) {
+        showToast(`${generados} de ${pdfFilesOrder.length} Excel generados`, Boolean(primerError));
+    }
+
+    if (primerError) {
+        showError(errorPdf, primerError.message || "Ocurrió un error al generar alguno de los Excel.");
+    } else {
+        formPdf.reset();
+        pdfFilesOrder = [];
+        renderPdfFileOrder();
+        updatePdfModoUI();
+    }
+}
+
 async function generatePdfToExcel() {
     if (submitPdfBtn.disabled) {
         return;
     }
 
     clearError(errorPdf);
+
+    if (pdfModoIndividualCheckbox.checked) {
+        await generatePdfToExcelIndividual();
+        return;
+    }
 
     const formData = new FormData(formPdf);
     const nombre = (formData.get("nombre_archivo") || "archivo_gtu").toString().trim() || "archivo_gtu";
