@@ -170,8 +170,8 @@ def generar_pdf_oficio_typst(
     ovi_total_letras = numero_a_letras(ovi_total)
 
     # Conversión y formateo previo de datos
-    dia_fmt = f"{int(fecha_dia):02d}" if fecha_dia.isdigit() else fecha_dia.zfill(2)
-    mes_fmt = f"{int(fecha_mes):02d}" if fecha_mes.isdigit() else fecha_mes.zfill(2)
+    dia_fmt = f"{int(fecha_dia):02d}" if fecha_dia.isdigit() else ""
+    mes_fmt = f"{int(fecha_mes):02d}" if fecha_mes.isdigit() else ""
     anio_fmt = str(fecha_anio)[-2:].zfill(2) if fecha_anio else ""
     ci_fmt = ci_firma.zfill(8)[-8:] if ci_firma else ""
     rut_fmt = rut_vendedor.zfill(13)[-13:] if rut_vendedor else ""
