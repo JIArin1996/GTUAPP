@@ -96,6 +96,51 @@ const submitSnigBtn = document.getElementById("snig-submit-btn");
 const spinnerSnig = document.getElementById("snig-spinner");
 const labelSnig = document.getElementById("snig-btn-label");
 const errorSnig = document.getElementById("snig-error-message");
+const campoArchivoExcel = document.getElementById("field-archivo-excel");
+const archivoExcelInput = document.getElementById("archivo_excel");
+const snigModoManualCheckbox = document.getElementById("snig_modo_manual");
+const campoCaravanasManuales = document.getElementById("field-caravanas-manuales");
+const caravanasManualesInput = document.getElementById("caravanas_manuales");
+
+const SNIG_PATTERN = /(?<!\d)(8580000\d{8})(?!\d)/g;
+const TXT_PREFIX = "A0000000";
+const TXT_SUFFIX = "|.|.|.|.|.|.|.|.|.|.|]";
+
+function extraerCaravanasDeTexto(texto) {
+    const vistas = new Set();
+    const caravanas = [];
+    for (const match of texto.matchAll(SNIG_PATTERN)) {
+        const caravana = match[1];
+        if (!vistas.has(caravana)) {
+            vistas.add(caravana);
+            caravanas.push(caravana);
+        }
+    }
+    return caravanas;
+}
+
+function construirTxtSnig(caravanas, guia) {
+    const ahora = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const fecha = `${pad(ahora.getDate())}${pad(ahora.getMonth() + 1)}${ahora.getFullYear()}`;
+    const hora = `${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
+
+    return (
+        caravanas.map((caravana) => `[|${TXT_PREFIX}${caravana}|${fecha}|${hora}|${guia}${TXT_SUFFIX}`).join("\n") + "\n"
+    );
+}
+
+function updateSnigModoUI() {
+    const modoManual = snigModoManualCheckbox.checked;
+    campoArchivoExcel.classList.toggle("is-hidden", modoManual);
+    campoCaravanasManuales.classList.toggle("is-hidden", !modoManual);
+    archivoExcelInput.required = !modoManual;
+    caravanasManualesInput.required = modoManual;
+    clearError(errorSnig);
+}
+
+snigModoManualCheckbox.addEventListener("change", updateSnigModoUI);
+updateSnigModoUI();
 
 const formTxt = document.getElementById("txt-form");
 const submitTxtBtn = document.getElementById("txt-submit-btn");
@@ -487,12 +532,53 @@ async function generatePdfToExcel() {
     }
 }
 
+async function generateExcelToTxtManual() {
+    const guia = document.getElementById("guia").value.trim();
+    if (!guia) {
+        showError(errorSnig, "Debes ingresar el número de guía.");
+        return;
+    }
+    if (!/^[A-Za-z]\d{6}$/.test(guia)) {
+        showError(errorSnig, "El número de guía debe tener 1 letra seguida de 6 números (ej: D674195).");
+        return;
+    }
+
+    const caravanas = extraerCaravanasDeTexto(caravanasManualesInput.value);
+    if (!caravanas.length) {
+        showError(errorSnig, "No se encontraron caravanas SNIG válidas (15 dígitos que comiencen con 8580000).");
+        return;
+    }
+
+    const nombre = (document.getElementById("nombre_txt").value || "salida_snig").trim() || "salida_snig";
+    const filename = `${nombre.replace(/\.txt$/i, "")}.txt`;
+
+    setLoading(submitSnigBtn, spinnerSnig, labelSnig, true, "Generar y descargar TXT", "Generando...");
+
+    try {
+        const contenido = construirTxtSnig(caravanas, guia);
+        const blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
+
+        triggerBlobDownload(blob, filename);
+        pushHistory(filename, "snig", blob);
+        showToast("TXT SNIG generado correctamente", false);
+        formSnig.reset();
+        updateSnigModoUI();
+    } finally {
+        setLoading(submitSnigBtn, spinnerSnig, labelSnig, false, "Generar y descargar TXT", "Generando...");
+    }
+}
+
 async function generateExcelToTxt() {
     if (submitSnigBtn.disabled) {
         return;
     }
 
     clearError(errorSnig);
+
+    if (snigModoManualCheckbox.checked) {
+        await generateExcelToTxtManual();
+        return;
+    }
 
     const formData = new FormData(formSnig);
     const nombre = (formData.get("nombre_txt") || "salida_snig").toString().trim() || "salida_snig";

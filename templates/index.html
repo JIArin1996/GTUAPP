@@ -87,7 +87,7 @@
 
                 <form id="snig-form" method="post" enctype="multipart/form-data" action="/excel-a-txt" novalidate>
                     <div class="fields-grid snig-grid">
-                        <div class="field">
+                        <div class="field" id="field-archivo-excel">
                             <label for="archivo_excel">Archivo Excel (.xlsx)</label>
                             <input type="file" id="archivo_excel" name="archivo_excel" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
                         </div>
@@ -99,6 +99,17 @@
                             <label for="nombre_txt">Nombre del TXT</label>
                             <input type="text" id="nombre_txt" name="nombre_txt" placeholder="ej: salida_snig">
                         </div>
+                        <div class="field field-checkbox">
+                            <label class="checkbox-label" for="snig_modo_manual">
+                                <input type="checkbox" id="snig_modo_manual">
+                                Pegar caravanas manualmente en vez de subir un Excel
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field is-hidden" id="field-caravanas-manuales">
+                        <label for="caravanas_manuales">Caravanas (una por línea)</label>
+                        <textarea id="caravanas_manuales" rows="6" placeholder="ej:&#10;858000012345678&#10;858000087654321"></textarea>
                     </div>
 
                     <p id="snig-error-message" class="inline-error" role="alert" aria-live="polite"></p>
