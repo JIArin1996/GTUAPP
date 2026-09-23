@@ -44,7 +44,7 @@
 
                 <form id="generador-form" method="post" enctype="multipart/form-data" action="/" novalidate>
                     <div class="fields-grid">
-                        <div class="field">
+                        <div class="field" id="field-nombre-archivo">
                             <label for="nombre_archivo">Nombre del archivo</label>
                             <input type="text" id="nombre_archivo" name="nombre_archivo" placeholder="ej: Venta_Cliente" required>
                         </div>
@@ -52,6 +52,17 @@
                             <label for="archivo_pdf">Archivos PDF</label>
                             <input type="file" id="archivo_pdf" name="archivo_pdf" accept="application/pdf" multiple required>
                         </div>
+                        <div class="field field-checkbox">
+                            <label class="checkbox-label" for="pdf_modo_individual">
+                                <input type="checkbox" id="pdf_modo_individual">
+                                Generar un Excel por cada PDF cargado
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="merge-file-order" id="pdf-file-order">
+                        <p class="merge-file-hint">Se generará un Excel por cada PDF. Podés cambiar el nombre o sacar alguno de la lista.</p>
+                        <ul class="merge-file-list" id="pdf-file-list"></ul>
                     </div>
 
                     <p id="error-message" class="inline-error{% if error %} is-visible{% endif %}" role="alert" aria-live="polite">{% if error %}{{ error }}{% endif %}</p>
@@ -76,7 +87,7 @@
 
                 <form id="snig-form" method="post" enctype="multipart/form-data" action="/excel-a-txt" novalidate>
                     <div class="fields-grid snig-grid">
-                        <div class="field">
+                        <div class="field" id="field-archivo-excel">
                             <label for="archivo_excel">Archivo Excel (.xlsx)</label>
                             <input type="file" id="archivo_excel" name="archivo_excel" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
                         </div>
@@ -88,6 +99,17 @@
                             <label for="nombre_txt">Nombre del TXT</label>
                             <input type="text" id="nombre_txt" name="nombre_txt" placeholder="ej: salida_snig">
                         </div>
+                        <div class="field field-checkbox" style="grid-column: 1 / -1; justify-content: flex-start;">
+                            <label class="checkbox-label" for="snig_modo_manual">
+                                <input type="checkbox" id="snig_modo_manual">
+                                Pegar caravanas manualmente
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field is-hidden" id="field-caravanas-manuales">
+                        <label for="caravanas_manuales">Caravanas (una por línea)</label>
+                        <textarea id="caravanas_manuales" rows="6" placeholder="ej:&#10;858000012345678&#10;858000087654321"></textarea>
                     </div>
 
                     <p id="snig-error-message" class="inline-error" role="alert" aria-live="polite"></p>

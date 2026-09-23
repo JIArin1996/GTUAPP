@@ -82,12 +82,65 @@ const submitPdfBtn = document.getElementById("submit-btn");
 const spinnerPdf = submitPdfBtn.querySelector(".spinner");
 const labelPdf = submitPdfBtn.querySelector(".btn-label");
 const errorPdf = document.getElementById("error-message");
+const campoNombreArchivo = document.getElementById("field-nombre-archivo");
+const nombreArchivoInput = document.getElementById("nombre_archivo");
+const archivoPdfInput = document.getElementById("archivo_pdf");
+const pdfModoIndividualCheckbox = document.getElementById("pdf_modo_individual");
+const pdfFileOrderWrap = document.getElementById("pdf-file-order");
+const pdfFileList = document.getElementById("pdf-file-list");
+
+let pdfFilesOrder = [];
 
 const formSnig = document.getElementById("snig-form");
 const submitSnigBtn = document.getElementById("snig-submit-btn");
 const spinnerSnig = document.getElementById("snig-spinner");
 const labelSnig = document.getElementById("snig-btn-label");
 const errorSnig = document.getElementById("snig-error-message");
+const campoArchivoExcel = document.getElementById("field-archivo-excel");
+const archivoExcelInput = document.getElementById("archivo_excel");
+const snigModoManualCheckbox = document.getElementById("snig_modo_manual");
+const campoCaravanasManuales = document.getElementById("field-caravanas-manuales");
+const caravanasManualesInput = document.getElementById("caravanas_manuales");
+
+const SNIG_PATTERN = /(?<!\d)(8580000\d{8})(?!\d)/g;
+const TXT_PREFIX = "A0000000";
+const TXT_SUFFIX = "|.|.|.|.|.|.|.|.|.|.|]";
+
+function extraerCaravanasDeTexto(texto) {
+    const vistas = new Set();
+    const caravanas = [];
+    for (const match of texto.matchAll(SNIG_PATTERN)) {
+        const caravana = match[1];
+        if (!vistas.has(caravana)) {
+            vistas.add(caravana);
+            caravanas.push(caravana);
+        }
+    }
+    return caravanas;
+}
+
+function construirTxtSnig(caravanas, guia) {
+    const ahora = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const fecha = `${pad(ahora.getDate())}${pad(ahora.getMonth() + 1)}${ahora.getFullYear()}`;
+    const hora = `${pad(ahora.getHours())}${pad(ahora.getMinutes())}`;
+
+    return (
+        caravanas.map((caravana) => `[|${TXT_PREFIX}${caravana}|${fecha}|${hora}|${guia}${TXT_SUFFIX}`).join("\n") + "\n"
+    );
+}
+
+function updateSnigModoUI() {
+    const modoManual = snigModoManualCheckbox.checked;
+    campoArchivoExcel.classList.toggle("is-hidden", modoManual);
+    campoCaravanasManuales.classList.toggle("is-hidden", !modoManual);
+    archivoExcelInput.required = !modoManual;
+    caravanasManualesInput.required = modoManual;
+    clearError(errorSnig);
+}
+
+snigModoManualCheckbox.addEventListener("change", updateSnigModoUI);
+updateSnigModoUI();
 
 const formTxt = document.getElementById("txt-form");
 const submitTxtBtn = document.getElementById("txt-submit-btn");
@@ -294,12 +347,156 @@ function triggerBlobDownload(blob, filename) {
     URL.revokeObjectURL(objectUrl);
 }
 
+function nombreSinExtension(filename) {
+    return filename.replace(/\.pdf$/i, "");
+}
+
+function renderPdfFileOrder() {
+    if (!pdfModoIndividualCheckbox.checked || pdfFilesOrder.length === 0) {
+        pdfFileList.innerHTML = "";
+        pdfFileOrderWrap.classList.remove("is-visible");
+        return;
+    }
+
+    pdfFileOrderWrap.classList.add("is-visible");
+    pdfFileList.innerHTML = pdfFilesOrder
+        .map(
+            (item, index) => `
+                <li class="pdf-file-row" data-index="${index}">
+                    <span class="merge-file-index">${index + 1}</span>
+                    <input type="text" class="pdf-file-name-input" data-index="${index}" value="${item.nombre}">
+                    <button type="button" class="pdf-file-remove" data-index="${index}" title="Quitar de la lista" aria-label="Quitar de la lista">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </li>
+            `
+        )
+        .join("");
+}
+
+function syncPdfFilesFromInput() {
+    pdfFilesOrder = [...archivoPdfInput.files].map((file) => ({
+        file,
+        nombre: nombreSinExtension(file.name),
+    }));
+    renderPdfFileOrder();
+}
+
+function updatePdfModoUI() {
+    const modoIndividual = pdfModoIndividualCheckbox.checked;
+    campoNombreArchivo.classList.toggle("is-hidden", modoIndividual);
+    nombreArchivoInput.required = !modoIndividual;
+
+    if (modoIndividual) {
+        syncPdfFilesFromInput();
+    } else {
+        pdfFilesOrder = [];
+        renderPdfFileOrder();
+    }
+}
+
+pdfModoIndividualCheckbox.addEventListener("change", updatePdfModoUI);
+
+archivoPdfInput.addEventListener("change", () => {
+    if (pdfModoIndividualCheckbox.checked) {
+        syncPdfFilesFromInput();
+    }
+});
+
+pdfFileList.addEventListener("input", (event) => {
+    const input = event.target.closest(".pdf-file-name-input");
+    if (!input) {
+        return;
+    }
+    const index = Number(input.dataset.index);
+    if (pdfFilesOrder[index]) {
+        pdfFilesOrder[index].nombre = input.value;
+    }
+});
+
+pdfFileList.addEventListener("click", (event) => {
+    const btn = event.target.closest(".pdf-file-remove");
+    if (!btn) {
+        return;
+    }
+    const index = Number(btn.dataset.index);
+    pdfFilesOrder.splice(index, 1);
+    renderPdfFileOrder();
+});
+
+async function generarExcelDesdePdf(archivoPdf, nombreArchivo) {
+    const formData = new FormData();
+    formData.append("archivo_pdf", archivoPdf);
+    formData.append("nombre_archivo", nombreArchivo);
+
+    const response = await fetch("/", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseErrorResponse(response, "No se pudo generar el archivo Excel."));
+    }
+
+    const blob = await response.blob();
+    const fallbackName = `${nombreArchivo.replace(/\.xlsx$/i, "")}.xlsx`;
+    const filename = extractFilename(response.headers.get("Content-Disposition"), fallbackName);
+
+    triggerBlobDownload(blob, filename);
+    pushHistory(filename, "pdf", blob);
+}
+
+async function generatePdfToExcelIndividual() {
+    if (!pdfFilesOrder.length) {
+        showError(errorPdf, "Debes cargar al menos un archivo PDF.");
+        return;
+    }
+
+    setLoading(submitPdfBtn, spinnerPdf, labelPdf, true, "Generar y descargar Excel", "Generando...");
+
+    let generados = 0;
+    let primerError = null;
+
+    for (const item of pdfFilesOrder) {
+        const nombre = item.nombre.trim() || nombreSinExtension(item.file.name);
+        try {
+            await generarExcelDesdePdf(item.file, nombre);
+            generados += 1;
+        } catch (error) {
+            primerError = primerError || error;
+        }
+    }
+
+    setLoading(submitPdfBtn, spinnerPdf, labelPdf, false, "Generar y descargar Excel", "Generando...");
+
+    if (generados > 0) {
+        showToast(`${generados} de ${pdfFilesOrder.length} Excel generados`, Boolean(primerError));
+    }
+
+    if (primerError) {
+        showError(errorPdf, primerError.message || "Ocurrió un error al generar alguno de los Excel.");
+    } else {
+        formPdf.reset();
+        pdfFilesOrder = [];
+        renderPdfFileOrder();
+        updatePdfModoUI();
+    }
+}
+
 async function generatePdfToExcel() {
     if (submitPdfBtn.disabled) {
         return;
     }
 
     clearError(errorPdf);
+
+    if (pdfModoIndividualCheckbox.checked) {
+        await generatePdfToExcelIndividual();
+        return;
+    }
 
     const formData = new FormData(formPdf);
     const nombre = (formData.get("nombre_archivo") || "archivo_gtu").toString().trim() || "archivo_gtu";
@@ -335,12 +532,53 @@ async function generatePdfToExcel() {
     }
 }
 
+async function generateExcelToTxtManual() {
+    const guia = document.getElementById("guia").value.trim();
+    if (!guia) {
+        showError(errorSnig, "Debes ingresar el número de guía.");
+        return;
+    }
+    if (!/^[A-Za-z]\d{6}$/.test(guia)) {
+        showError(errorSnig, "El número de guía debe tener 1 letra seguida de 6 números (ej: D674195).");
+        return;
+    }
+
+    const caravanas = extraerCaravanasDeTexto(caravanasManualesInput.value);
+    if (!caravanas.length) {
+        showError(errorSnig, "No se encontraron caravanas SNIG válidas (15 dígitos que comiencen con 8580000).");
+        return;
+    }
+
+    const nombre = (document.getElementById("nombre_txt").value || "salida_snig").trim() || "salida_snig";
+    const filename = `${nombre.replace(/\.txt$/i, "")}.txt`;
+
+    setLoading(submitSnigBtn, spinnerSnig, labelSnig, true, "Generar y descargar TXT", "Generando...");
+
+    try {
+        const contenido = construirTxtSnig(caravanas, guia);
+        const blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
+
+        triggerBlobDownload(blob, filename);
+        pushHistory(filename, "snig", blob);
+        showToast("TXT SNIG generado correctamente", false);
+        formSnig.reset();
+        updateSnigModoUI();
+    } finally {
+        setLoading(submitSnigBtn, spinnerSnig, labelSnig, false, "Generar y descargar TXT", "Generando...");
+    }
+}
+
 async function generateExcelToTxt() {
     if (submitSnigBtn.disabled) {
         return;
     }
 
     clearError(errorSnig);
+
+    if (snigModoManualCheckbox.checked) {
+        await generateExcelToTxtManual();
+        return;
+    }
 
     const formData = new FormData(formSnig);
     const nombre = (formData.get("nombre_txt") || "salida_snig").toString().trim() || "salida_snig";
