@@ -26,3 +26,7 @@ xls_temporal.xlsx
 Thumbs.db
 .vscode/
 .idea/
+
+# Secretos / sesiones locales (NO commitear)
+.env
+snig_storage_state.json
