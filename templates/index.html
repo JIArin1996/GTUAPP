@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador GTU | Conversores</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icono_appgtu.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v6') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='v7') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="{{ url_for('static', filename='app.js', v='v5') }}" defer></script>
 </head>
@@ -196,168 +196,175 @@
                 <div class="panel-header">
                     <div class="panel-badge oficio-badge">OFICIO → PDF</div>
                     <div>
-                        <p class="panel-title">Generar Oficio Typst</p>
-                        <p class="panel-desc">Generá un PDF con formato de hoja oficio, DICOSEs e información calibrada.</p>
+                        <p class="panel-title">Generar Oficio</p>
+                        <p class="panel-desc">Generá un PDF en hoja oficio con los DICOSEs y los datos de la operación.</p>
                     </div>
                 </div>
 
                 <form id="oficio-form" method="post" action="/generar-oficio" target="_blank" novalidate>
-                    <!-- Tipo de Operación -->
-                    <div class="field" style="margin-bottom: 1.5rem;">
-                        <label for="tipo_operacion" style="font-weight: 600;">Tipo de Operación:</label>
-                        <input type="text" id="tipo_operacion" name="tipo_operacion" placeholder="Ej: VENTA, TRASLADO, etc." style="margin-top: 0.4rem;">
-                    </div>
-
-                    <!-- Selección de Cambio de Propiedad -->
-                    <div class="field" style="margin-bottom: 1.5rem;">
-                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Tipo de trámite:</label>
-                        <div style="display: flex; gap: 1.5rem; align-items: center;">
-                            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-                                <input type="radio" name="cambio_propiedad" value="con" checked> Con cambio de propiedad
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-                                <input type="radio" name="cambio_propiedad" value="sin"> Sin cambio de propiedad
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- DICOSE A -->
-                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">DICOSE A (Superior Izq.)</h4>
-                    <div class="fields-grid">
-                        <div class="field">
-                            <label for="dicose_a">DICOSE A</label>
-                            <input type="text" id="dicose_a" name="dicose_a" value="123456789" maxlength="9" placeholder="9 dígitos">
-                        </div>
-                        <div class="field">
-                            <label for="razon_social_a">Razón Social A</label>
-                            <input type="text" id="razon_social_a" name="razon_social_a" placeholder="Razón Social">
-                        </div>
-                        <div class="field">
-                            <label for="domicilio_a">Domicilio Constituido A</label>
-                            <input type="text" id="domicilio_a" name="domicilio_a" placeholder="Domicilio Constituido">
-                        </div>
-                    </div>
-
-                    <!-- DICOSE B -->
-                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">DICOSE B (Superior Der.)</h4>
-                    <div class="fields-grid">
-                        <div class="field">
-                            <label for="dicose_b">DICOSE B</label>
-                            <input type="text" id="dicose_b" name="dicose_b" value="123456789" maxlength="9" placeholder="9 dígitos">
-                        </div>
-                        <div class="field">
-                            <label for="razon_social_b">Razón Social B</label>
-                            <input type="text" id="razon_social_b" name="razon_social_b" placeholder="Razón Social">
-                        </div>
-                        <div class="field">
-                            <label for="domicilio_b">Domicilio Constituido B</label>
-                            <input type="text" id="domicilio_b" name="domicilio_b" placeholder="Domicilio Constituido">
-                        </div>
-                    </div>
-
-                    <!-- DICOSE C -->
-                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">DICOSE C (Inferior Izq.)</h4>
-                    <div class="fields-grid">
-                        <div class="field">
-                            <label for="dicose_c">DICOSE C</label>
-                            <input type="text" id="dicose_c" name="dicose_c" value="123456789" maxlength="9" placeholder="9 dígitos">
-                        </div>
-                        <div class="field">
-                            <label for="razon_social_c">Razón Social C</label>
-                            <input type="text" id="razon_social_c" name="razon_social_c" placeholder="Razón Social">
-                        </div>
-                        <div class="field">
-                            <label for="domicilio_c">Domicilio Constituido C</label>
-                            <input type="text" id="domicilio_c" name="domicilio_c" placeholder="Domicilio Constituido">
-                        </div>
-                    </div>
-
-                    <!-- DICOSE D -->
-                    <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">DICOSE D (Inferior Der.)</h4>
-                    <div class="fields-grid">
-                        <div class="field">
-                            <label for="dicose_d">DICOSE D</label>
-                            <input type="text" id="dicose_d" name="dicose_d" value="123456789" maxlength="9" placeholder="9 dígitos">
-                        </div>
-                        <div class="field">
-                            <label for="razon_social_d">Razón Social D</label>
-                            <input type="text" id="razon_social_d" name="razon_social_d" placeholder="Razón Social">
-                        </div>
-                        <div class="field">
-                            <label for="domicilio_d">Domicilio Constituido D</label>
-                            <input type="text" id="domicilio_d" name="domicilio_d" placeholder="Domicilio Constituido">
-                        </div>
-                    </div>
-
-                    <!-- SECCIÓN VACUNOS Y OVINOS -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
-                        <!-- VACUNOS -->
-                        <div>
-                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">Detalles de Vacunos</h4>
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                <div class="field"><label for="vac_toros">Toros</label><input type="number" class="vac-input" id="vac_toros" name="vac_toros" min="0"></div>
-                                <div class="field"><label for="vac_vacas">Vacas</label><input type="number" class="vac-input" id="vac_vacas" name="vac_vacas" min="0"></div>
-                                <div class="field"><label for="vac_nov_3">Novillos +3 años y bueyes</label><input type="number" class="vac-input" id="vac_nov_3" name="vac_nov_3" min="0"></div>
-                                <div class="field"><label for="vac_nov_2_3">Novillos 2 a 3 años</label><input type="number" class="vac-input" id="vac_nov_2_3" name="vac_nov_2_3" min="0"></div>
-                                <div class="field"><label for="vac_nov_1_2">Novillos 1 a 2 años</label><input type="number" class="vac-input" id="vac_nov_1_2" name="vac_nov_1_2" min="0"></div>
-                                <div class="field"><label for="vac_vaq_2">Vaquillonas +2 años</label><input type="number" class="vac-input" id="vac_vaq_2" name="vac_vaq_2" min="0"></div>
-                                <div class="field"><label for="vac_vaq_1_2">Vaquillonas 1 a 2 años</label><input type="number" class="vac-input" id="vac_vaq_1_2" name="vac_vaq_1_2" min="0"></div>
-                                <div class="field"><label for="vac_terneros">Terneros</label><input type="number" class="vac-input" id="vac_terneros" name="vac_terneros" min="0"></div>
-                                <div class="field"><label for="vac_total" style="font-weight: 600;">Total Vacunos</label><input type="number" readonly id="vac_total" name="vac_total" style="font-weight: 600; background-color: #f5f5f5;"></div>
+                    <!-- Operación -->
+                    <div class="form-section">
+                        <p class="form-section-title">Operación</p>
+                        <div class="fields-grid">
+                            <div class="field">
+                                <label for="tipo_operacion">Tipo de operación</label>
+                                <input type="text" id="tipo_operacion" name="tipo_operacion" placeholder="ej: VENTA, TRASLADO">
                             </div>
-                        </div>
-
-                        <!-- OVINOS -->
-                        <div>
-                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">Detalles de Ovinos</h4>
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                <div class="field"><label for="ovi_carneros">Carneros</label><input type="number" class="ovi-input" id="ovi_carneros" name="ovi_carneros" min="0"></div>
-                                <div class="field"><label for="ovi_ovejas">Ovejas</label><input type="number" class="ovi-input" id="ovi_ovejas" name="ovi_ovejas" min="0"></div>
-                                <div class="field"><label for="ovi_capones">Capones</label><input type="number" class="ovi-input" id="ovi_capones" name="ovi_capones" min="0"></div>
-                                <div class="field"><label for="ovi_borregas">Borregas 2-4D</label><input type="number" class="ovi-input" id="ovi_borregas" name="ovi_borregas" min="0"></div>
-                                <div class="field"><label for="ovi_corderas_dl">Corderas DL</label><input type="number" class="ovi-input" id="ovi_corderas_dl" name="ovi_corderas_dl" min="0"></div>
-                                <div class="field"><label for="ovi_corderos_dl">Corderos DL</label><input type="number" class="ovi-input" id="ovi_corderos_dl" name="ovi_corderos_dl" min="0"></div>
-                                <div class="field"><label for="ovi_mamones">Corderos/as - mamones</label><input type="number" class="ovi-input" id="ovi_mamones" name="ovi_mamones" min="0"></div>
-                                <div class="field"><label for="ovi_total" style="font-weight: 600;">Total Ovinos</label><input type="number" readonly id="ovi_total" name="ovi_total" style="font-weight: 600; background-color: #f5f5f5;"></div>
+                            <div class="field">
+                                <span class="field-label">Tipo de trámite</span>
+                                <div class="radio-group" role="radiogroup" aria-label="Tipo de trámite">
+                                    <label class="radio-option">
+                                        <input type="radio" name="cambio_propiedad" value="con" checked>
+                                        Con cambio de propiedad
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="cambio_propiedad" value="sin">
+                                        Sin cambio de propiedad
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- FECHA Y CÉDULA FIRMA -->
-                    <h4 style="margin: 1.5rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">Fecha y Firma</h4>
-                    <div class="fields-grid" style="grid-template-columns: 1fr 1fr 1fr 2fr; gap: 1rem;">
-                        <div class="field">
-                            <label for="fecha_dia">Día</label>
-                            <input type="number" id="fecha_dia" name="fecha_dia" min="1" max="31" placeholder="DD">
-                        </div>
-                        <div class="field">
-                            <label for="fecha_mes">Mes</label>
-                            <input type="number" id="fecha_mes" name="fecha_mes" min="1" max="12" placeholder="MM">
-                        </div>
-                        <div class="field">
-                            <label for="fecha_anio">Año</label>
-                            <input type="number" id="fecha_anio" name="fecha_anio" placeholder="YY o YYYY">
-                        </div>
-                        <div class="field">
-                            <label for="ci_firma">Cédula Firma</label>
-                            <input type="text" id="ci_firma" name="ci_firma" maxlength="8" placeholder="8 dígitos sin puntos ni guion">
+                    <!-- Titulares (DICOSEs) — ubicados como en la hoja -->
+                    <div class="form-section">
+                        <p class="form-section-title">Titulares</p>
+                        <div class="dicose-grid">
+                            <fieldset class="dicose-card">
+                                <legend><span class="dicose-letter">A</span>Superior izq.</legend>
+                                <div class="field">
+                                    <label for="dicose_a">DICOSE</label>
+                                    <input type="text" id="dicose_a" name="dicose_a" maxlength="9" placeholder="9 dígitos">
+                                </div>
+                                <div class="field">
+                                    <label for="razon_social_a">Razón social</label>
+                                    <input type="text" id="razon_social_a" name="razon_social_a" placeholder="Razón social">
+                                </div>
+                                <div class="field">
+                                    <label for="domicilio_a">Domicilio constituido</label>
+                                    <input type="text" id="domicilio_a" name="domicilio_a" placeholder="Domicilio constituido">
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="dicose-card">
+                                <legend><span class="dicose-letter">B</span>Superior der.</legend>
+                                <div class="field">
+                                    <label for="dicose_b">DICOSE</label>
+                                    <input type="text" id="dicose_b" name="dicose_b" maxlength="9" placeholder="9 dígitos">
+                                </div>
+                                <div class="field">
+                                    <label for="razon_social_b">Razón social</label>
+                                    <input type="text" id="razon_social_b" name="razon_social_b" placeholder="Razón social">
+                                </div>
+                                <div class="field">
+                                    <label for="domicilio_b">Domicilio constituido</label>
+                                    <input type="text" id="domicilio_b" name="domicilio_b" placeholder="Domicilio constituido">
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="dicose-card">
+                                <legend><span class="dicose-letter">C</span>Inferior izq.</legend>
+                                <div class="field">
+                                    <label for="dicose_c">DICOSE</label>
+                                    <input type="text" id="dicose_c" name="dicose_c" maxlength="9" placeholder="9 dígitos">
+                                </div>
+                                <div class="field">
+                                    <label for="razon_social_c">Razón social</label>
+                                    <input type="text" id="razon_social_c" name="razon_social_c" placeholder="Razón social">
+                                </div>
+                                <div class="field">
+                                    <label for="domicilio_c">Domicilio constituido</label>
+                                    <input type="text" id="domicilio_c" name="domicilio_c" placeholder="Domicilio constituido">
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="dicose-card">
+                                <legend><span class="dicose-letter">D</span>Inferior der.</legend>
+                                <div class="field">
+                                    <label for="dicose_d">DICOSE</label>
+                                    <input type="text" id="dicose_d" name="dicose_d" maxlength="9" placeholder="9 dígitos">
+                                </div>
+                                <div class="field">
+                                    <label for="razon_social_d">Razón social</label>
+                                    <input type="text" id="razon_social_d" name="razon_social_d" placeholder="Razón social">
+                                </div>
+                                <div class="field">
+                                    <label for="domicilio_d">Domicilio constituido</label>
+                                    <input type="text" id="domicilio_d" name="domicilio_d" placeholder="Domicilio constituido">
+                                </div>
+                            </fieldset>
                         </div>
                     </div>
 
-                    <!-- RUT VENDEDOR -->
-                    <h4 style="margin: 1.5rem 0 0.5rem 0; font-size: 0.95rem; color: var(--text-muted, #555);">Datos del Vendedor</h4>
-                    <div class="field">
-                        <label for="rut_vendedor">RUT Vendedor</label>
-                        <input type="text" id="rut_vendedor" name="rut_vendedor" maxlength="13" placeholder="13 dígitos">
+                    <!-- Animales (opcional, plegado por defecto; los campos se envían igual) -->
+                    <details class="form-section collapsible" id="stock-details">
+                        <summary class="collapsible-toggle">
+                            <span class="collapsible-title">Detalle de animales</span>
+                            <svg class="collapsible-chevron" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </summary>
+
+                        <div class="stock-grid">
+                            <div class="stock-table">
+                                <p class="stock-table-head">Vacunos</p>
+                                <div class="stock-row"><label for="vac_toros">Toros</label><input type="number" class="vac-input" id="vac_toros" name="vac_toros" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_vacas">Vacas</label><input type="number" class="vac-input" id="vac_vacas" name="vac_vacas" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_nov_3">Novillos +3 años y bueyes</label><input type="number" class="vac-input" id="vac_nov_3" name="vac_nov_3" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_nov_2_3">Novillos 2 a 3 años</label><input type="number" class="vac-input" id="vac_nov_2_3" name="vac_nov_2_3" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_nov_1_2">Novillos 1 a 2 años</label><input type="number" class="vac-input" id="vac_nov_1_2" name="vac_nov_1_2" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_vaq_2">Vaquillonas +2 años</label><input type="number" class="vac-input" id="vac_vaq_2" name="vac_vaq_2" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_vaq_1_2">Vaquillonas 1 a 2 años</label><input type="number" class="vac-input" id="vac_vaq_1_2" name="vac_vaq_1_2" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="vac_terneros">Terneros</label><input type="number" class="vac-input" id="vac_terneros" name="vac_terneros" min="0" placeholder="0"></div>
+                                <div class="stock-row stock-total"><label for="vac_total">Total vacunos</label><input type="number" readonly tabindex="-1" id="vac_total" name="vac_total"></div>
+                            </div>
+
+                            <div class="stock-table">
+                                <p class="stock-table-head">Ovinos</p>
+                                <div class="stock-row"><label for="ovi_carneros">Carneros</label><input type="number" class="ovi-input" id="ovi_carneros" name="ovi_carneros" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="ovi_ovejas">Ovejas</label><input type="number" class="ovi-input" id="ovi_ovejas" name="ovi_ovejas" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="ovi_capones">Capones</label><input type="number" class="ovi-input" id="ovi_capones" name="ovi_capones" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="ovi_borregas">Borregas 2-4D</label><input type="number" class="ovi-input" id="ovi_borregas" name="ovi_borregas" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="ovi_corderas_dl">Corderas DL</label><input type="number" class="ovi-input" id="ovi_corderas_dl" name="ovi_corderas_dl" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="ovi_corderos_dl">Corderos DL</label><input type="number" class="ovi-input" id="ovi_corderos_dl" name="ovi_corderos_dl" min="0" placeholder="0"></div>
+                                <div class="stock-row"><label for="ovi_mamones">Corderos/as mamones</label><input type="number" class="ovi-input" id="ovi_mamones" name="ovi_mamones" min="0" placeholder="0"></div>
+                                <div class="stock-row stock-total"><label for="ovi_total">Total ovinos</label><input type="number" readonly tabindex="-1" id="ovi_total" name="ovi_total"></div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Firma y vendedor (la fecha puede quedar vacía) -->
+                    <div class="form-section">
+                        <p class="form-section-title">Firma y vendedor</p>
+                        <div class="sign-grid">
+                            <div class="field">
+                                <label for="fecha_dia">Día</label>
+                                <input type="number" id="fecha_dia" name="fecha_dia" min="1" max="31" placeholder="DD">
+                            </div>
+                            <div class="field">
+                                <label for="fecha_mes">Mes</label>
+                                <input type="number" id="fecha_mes" name="fecha_mes" min="1" max="12" placeholder="MM">
+                            </div>
+                            <div class="field">
+                                <label for="fecha_anio">Año</label>
+                                <input type="number" id="fecha_anio" name="fecha_anio" placeholder="AAAA">
+                            </div>
+                            <div class="field sign-ci">
+                                <label for="ci_firma">Cédula firma</label>
+                                <input type="text" id="ci_firma" name="ci_firma" maxlength="8" placeholder="8 dígitos, sin puntos ni guion">
+                            </div>
+                        </div>
+                        <div class="fields-grid" style="margin-top: 14px;">
+                            <div class="field">
+                                <label for="rut_vendedor">RUT vendedor</label>
+                                <input type="text" id="rut_vendedor" name="rut_vendedor" maxlength="13" placeholder="13 dígitos">
+                            </div>
+                            <div class="field">
+                                <label for="nombre_oficio">Nombre del PDF</label>
+                                <input type="text" id="nombre_oficio" name="nombre_oficio" placeholder="ej: Oficio_Prueba">
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Nombre del Archivo -->
-                    <div class="field" style="margin-top: 1.5rem;">
-                        <label for="nombre_oficio">Nombre del PDF</label>
-                        <input type="text" id="nombre_oficio" name="nombre_oficio" placeholder="ej: Oficio_Prueba">
-                    </div>
-
-                    <button type="submit" id="oficio-submit-btn" class="primary-btn btn-blue" style="margin-top: 1rem;">
+                    <button type="submit" id="oficio-submit-btn" class="primary-btn btn-rose">
                         <span class="btn-label">Ver / Descargar PDF</span>
                     </button>
                 </form>
@@ -365,11 +372,24 @@
 
             <script>
             document.addEventListener('DOMContentLoaded', () => {
+                const stockSummary = document.getElementById('stock-summary');
+
+                // Resumen visible con la sección plegada: "12 vacunos · 5 ovinos" u "Opcional"
+                const actualizarResumen = () => {
+                    const vac = parseInt(document.getElementById('vac_total').value, 10) || 0;
+                    const ovi = parseInt(document.getElementById('ovi_total').value, 10) || 0;
+                    const partes = [];
+                    if (vac) partes.push(`${vac} vacunos`);
+                    if (ovi) partes.push(`${ovi} ovinos`);
+                    stockSummary.textContent = partes.length ? partes.join(' · ') : 'Opcional';
+                    stockSummary.classList.toggle('has-values', partes.length > 0);
+                };
+
                 // Función genérica para sumar inputs
                 const calcularTotal = (inputsSelector, totalInputId) => {
                     const inputs = document.querySelectorAll(inputsSelector);
                     const totalInput = document.getElementById(totalInputId);
-                    
+
                     let suma = 0;
                     inputs.forEach(input => {
                         const val = parseInt(input.value, 10);
@@ -377,8 +397,9 @@
                             suma += val;
                         }
                     });
-                    
+
                     totalInput.value = suma > 0 ? suma : '';
+                    actualizarResumen();
                 };
 
                 // Restringir entrada a enteros y calcular
@@ -401,6 +422,13 @@
 
                 bindInputEvents('.vac-input', 'vac_total');
                 bindInputEvents('.ovi-input', 'ovi_total');
+
+                // Si el navegador restauró valores (volver atrás), abrir la sección y recalcular
+                calcularTotal('.vac-input', 'vac_total');
+                calcularTotal('.ovi-input', 'ovi_total');
+                if (stockSummary.classList.contains('has-values')) {
+                    document.getElementById('stock-details').open = true;
+                }
             });
             </script>
         </section>
